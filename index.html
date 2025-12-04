@@ -520,15 +520,11 @@
     let modoOrcamento = false;
     let modoPedido = false;
 
-    // orcamento[id] = { quantidade: number }
     let orcamento = {};
-    // pedidoConfig[id] = { encosto: {faixa, tecido}, costas: {...}, assento: {...}, observacoes: '' }
     let pedidoConfig = {};
 
-    // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
 
-    // Tecidos por faixa (carregado de tecidos.json)
     let tecidosPorFaixa = {};
     let faixasDisponiveis = [];
 
@@ -573,7 +569,6 @@
 
     const SENHA_GERENTE = "STAR2025";
 
-    // Modal imagem
     const imageModal = document.getElementById("imageModal");
     const modalImage = document.getElementById("modalImage");
 
@@ -764,7 +759,6 @@
 
     carregarConfigNosInputs();
 
-    // Carrega produtos
     fetch("produtos.json")
       .then(res => {
         if (!res.ok) throw new Error("Erro HTTP: " + res.status);
@@ -800,7 +794,6 @@
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
-    // Carrega tecidos
     fetch("tecidos.json")
       .then(res => {
         if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
@@ -851,12 +844,10 @@
 
       let matches = [];
 
-      // 1) Código exato
       const exato = produtos.find(p => p._codigoNorm === termoNorm);
       if (exato) {
         matches = [exato];
       } else {
-        // 2) Código parcial
         const termoSemEspaco = termoNorm.replace(/\s+/g, "");
         const codigoParcial = produtos.find(p =>
           p._codigoNorm.replace(/\s+/g, "").includes(termoSemEspaco)
@@ -864,7 +855,6 @@
         if (codigoParcial) {
           matches = [codigoParcial];
         } else {
-          // 3) Frases completas
           const frasesBuscadas = frasesUnicas.filter(f => {
             const fTokens = f.split(/\s+/).filter(Boolean);
             if (fTokens.length === 0) return false;
@@ -882,7 +872,6 @@
               )
             );
           } else {
-            // 4) Fallback por tokens
             const tokens = termoTokens;
             matches = produtos.filter(p => {
               const texto = p._codigoNorm + " " + p._camposNorm.join(" ");
@@ -892,7 +881,6 @@
         }
       }
 
-      // Filtrar por dimensões numéricas (quando houver)
       if (numerosBusca.length > 0) {
         const tol = 0.01;
         matches = matches.filter(p => {
@@ -903,7 +891,6 @@
         });
       }
 
-      // Filtrar por categoria (MESA, CADEIRA, POLTRONA)
       if (categoriaFiltro) {
         matches = matches.filter(p =>
           p._camposNorm.some(cf => cf.split(/\s+/).includes(categoriaFiltro))
@@ -935,14 +922,12 @@
 
         html += `<div class="item">`;
 
-        // Coluna da imagem
         html += `<div class="produto-imagem-wrapper">
           <img src="imagens/${p.codigo}.jpg" alt="Imagem ${p.codigo}"
                onclick="abrirImagemModal('imagens/${p.codigo}.jpg')"
                onerror="this.style.display='none';" />
         </div>`;
 
-        // Coluna de informações
         html += `<div class="produto-info">`;
         html += `<div><strong>Código:</strong> ${p.codigo}</div>`;
         if (p.chaves) {
@@ -980,8 +965,8 @@
           html += `<div class="preco-sec">Sem preço de tabela cadastrado.</div>`;
         }
 
-        html += `</div>`; // produto-info
-        html += `</div>`; // item
+        html += `</div>`;
+        html += `</div>`;
       });
 
       if (fatores.avisoDesconto) {
@@ -1083,7 +1068,6 @@
           </div>
         </div>`;
 
-        // Bloco de configuração de pedido (modo pedido)
         linhas += renderBlocoPedido(id, p);
       });
 
@@ -1145,7 +1129,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
 ");
     }
 
-    // Eventos de busca e limpeza
     btnBuscar.addEventListener("click", () => {
       buscarProduto(campoBusca.value);
     });
@@ -1171,7 +1154,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       else if (modoOrcamento) resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
     });
 
-    // Modo gerente
     btnToggleAdmin.addEventListener("click", () => {
       if (!isAdmin) {
         const senha = prompt("Digite a senha do gerente:");
@@ -1197,19 +1179,16 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
-    // Modo orçamento
     btnToggleOrcamento.addEventListener("click", () => {
       modoOrcamento = !modoOrcamento;
       aplicarModoOrcamentoUI();
     });
 
-    // Modo pedido
     btnTogglePedido.addEventListener("click", () => {
       modoPedido = !modoPedido;
       aplicarModoPedidoUI();
     });
 
-    // Salvar config gerente
     btnSalvarConfig.addEventListener("click", () => {
       if (!isAdmin) return;
       const ipiVal = obterPercentual(ipiInput.value);
@@ -1232,7 +1211,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
-    // Filtros de categoria
     btnCatTodos.addEventListener("click", () => {
       categoriaFiltro = "";
       aplicarFiltroCategoriaUI();
@@ -1254,12 +1232,10 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
     });
 
-    // Delegação de eventos para orçamento + pedido
     resultadoDiv.addEventListener("change", (event) => {
       const target = event.target;
 
       if (modoOrcamento) {
-        // Checkbox incluir no orçamento
         if (target.classList.contains("chk-orcamento")) {
           const id = target.getAttribute("data-id");
           if (target.checked) {
@@ -1275,7 +1251,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
           else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
         }
 
-        // Quantidade
         if (target.classList.contains("input-qtd-orcamento")) {
           const id = target.getAttribute("data-id");
           let qtd = parseInt(target.value, 10);
@@ -1297,7 +1272,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
         }
       }
 
-      // Seleção de FAIXA (modo pedido)
       if (target.classList.contains("faixa-select")) {
         const id = target.getAttribute("data-id");
         const secao = target.getAttribute("data-secao");
@@ -1307,7 +1281,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
         pedidoConfig[id][secao].faixa = faixa;
         pedidoConfig[id][secao].tecido = "";
 
-        // Atualiza opções do select de tecido correspondente
         const tecidoSelect = resultadoDiv.querySelector(`select.tecido-select[data-id="${id}"][data-secao="${secao}"]`);
         if (tecidoSelect) {
           const lista = faixa && tecidosPorFaixa[faixa] ? tecidosPorFaixa[faixa] : [];
@@ -1319,7 +1292,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
         }
       }
 
-      // Seleção de TECIDO (modo pedido)
       if (target.classList.contains("tecido-select")) {
         const id = target.getAttribute("data-id");
         const secao = target.getAttribute("data-secao");
@@ -1330,7 +1302,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
-    // Observações do pedido (texto livre)
     resultadoDiv.addEventListener("input", (event) => {
       const target = event.target;
       if (target.classList.contains("obs-pedido")) {
@@ -1340,7 +1311,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
-    // Botões do orçamento (limpar / copiar / imprimir)
     resultadoDiv.addEventListener("click", (event) => {
       const target = event.target;
       if (!modoOrcamento) return;
@@ -1374,7 +1344,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
-    // Voz
     let recognition = null;
 
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
@@ -1395,7 +1364,7 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       recognition.onresult = (event) => {
         const texto = event.results[0][0].transcript;
         campoBusca.value = texto;
-        statusSpan.textContent = "Você disse: "" + texto + """;
+        statusSpan.textContent = "Você disse: \"" + texto + "\"";
         buscarProduto(texto);
       };
 
