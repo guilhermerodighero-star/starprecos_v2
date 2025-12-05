@@ -469,6 +469,8 @@
   <script>
     let produtos = [];
     let frasesUnicas = [];
+    let tecidosPorFaixa = {};
+    let faixasTecidos = [];
     let isAdmin = false;
     let modoOrcamento = false;
     // orcamento[id] = { quantidade: number }
@@ -736,6 +738,20 @@
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
+    fetch("tecidos.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        tecidosPorFaixa = data || {};
+        faixasTecidos = Object.keys(tecidosPorFaixa);
+        console.log("Tecidos carregados:", tecidosPorFaixa);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar tecidos.json:", err);
+      });
+
     if (localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
       isAdmin = true;
     }
@@ -908,76 +924,92 @@
       resultadoDiv.innerHTML = html;
     }
 
-    function renderizarResumoOrcamento(fatores) {
-      const ids = Object.keys(orcamento);
-      if (!modoOrcamento) return "";
-      if (ids.length === 0) {
-        return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
-      }
+    
+function renderizarResumoOrcamento(fatores) {
+  const ids = Object.keys(orcamento);
+  if (!modoOrcamento) return "";
+  if (ids.length === 0) {
+    return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
+  }
 
-      let total = 0;
-      let linhas = "";
+  let total = 0;
+  let linhas = "";
 
-      // Carrega faixas de encosto salvas (por código do produto)
-      const faixasEncosto = JSON.parse(localStorage.getItem("starmobile_faixas_encosto") || "{}");
+  // Carrega configuração de Encosto (faixa + tecido) salva por código
+  const encostoConfig = getEncostoConfig();
 
-      ids.forEach(id => {
-        const item = orcamento[id];
-        const p = produtos.find(pp => String(pp._id) === String(id));
-        if (!p || p.preco_lista == null) return;
-        const valores = calcularValoresProduto(p, fatores);
-        const qtd = item.quantidade || 1;
-        const subtotal = valores.valorFinal * qtd;
-        total += subtotal;
+  ids.forEach(id => {
+    const item = orcamento[id];
+    const p = produtos.find(pp => String(pp._id) === String(id));
+    if (!p || p.preco_lista == null) return;
+    const valores = calcularValoresProduto(p, fatores);
+    const qtd = item.quantidade || 1;
+    const subtotal = valores.valorFinal * qtd;
+    total += subtotal;
 
-        const desc = p.chaves || "";
-        const tipoTexto = (p.chaves || "").toUpperCase();
-        const faixaSelecionada = faixasEncosto[p.codigo] || "";
+    const desc = p.chaves || "";
+    const tipoTexto = (p.chaves || "").toUpperCase();
 
-        // Linha principal do item
-        linhas += `<div class="orcamento-linha">
-          <div class="orcamento-desc">
-            <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
-            <span>${p.codigo} – ${desc}</span>
-          </div>
-          <div class="orcamento-valores">
-            R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
-          </div>
-        </div>`;
+    const conf = encostoConfig[p.codigo] || {};
+    const faixaSelecionada = conf.faixa || "";
+    const tecidoSelecionado = conf.tecido || "";
 
-        // Se for cadeira, banqueta ou poltrona, mostra o subtítulo de Encosto
-        if (
-          tipoTexto.includes("CADEIRA") ||
-          tipoTexto.includes("BANQUETA") ||
-          tipoTexto.includes("POLTRONA")
-        ) {
-          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center;">
-              <strong>Encosto:</strong>
-              <select class="faixa-encosto" data-codigo="${p.codigo}"
-                      onchange="salvarFaixaEncosto('${p.codigo}', this.value)">
-                <option value="">Selecione...</option>
-                <option value="FAIXA 1" ${faixaSelecionada === "FAIXA 1" ? "selected" : ""}>FAIXA 1</option>
-                <option value="FAIXA 2" ${faixaSelecionada === "FAIXA 2" ? "selected" : ""}>FAIXA 2</option>
-                <option value="FAIXA 3" ${faixaSelecionada === "FAIXA 3" ? "selected" : ""}>FAIXA 3</option>
-                <option value="FAIXA 4" ${faixaSelecionada === "FAIXA 4" ? "selected" : ""}>FAIXA 4</option>
-              </select>
-            </div>
-          </div>`;
-        }
+    let opcoesTecidos = '<option value="">Selecione o tecido...</option>';
+    if (faixaSelecionada && tecidosPorFaixa && tecidosPorFaixa[faixaSelecionada]) {
+      tecidosPorFaixa[faixaSelecionada].forEach(t => {
+        opcoesTecidos += `<option value="${t}" ${tecidoSelecionado === t ? "selected" : ""}>${t}</option>`;
       });
+    }
 
-      return `<div class="orcamento-panel">
-        <h3>Orçamento atual</h3>
-        <div class="orcamento-acoes">
-          <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
-          <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
-          <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
+    // Linha principal do item
+    linhas += `<div class="orcamento-linha">
+      <div class="orcamento-desc">
+        <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
+        <span>${p.codigo} – ${desc}</span>
+      </div>
+      <div class="orcamento-valores">
+        R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
+      </div>
+    </div>`;
+
+    // Se for cadeira, banqueta ou poltrona, mostra o subtítulo Encosto + 2 listas
+    if (
+      tipoTexto.includes("CADEIRA") ||
+      tipoTexto.includes("BANQUETA") ||
+      tipoTexto.includes("POLTRONA")
+    ) {
+      linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+        <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <strong>Encosto:</strong>
+          <select class="faixa-encosto" data-codigo="${p.codigo}"
+                  onchange="onFaixaEncostoChange('${p.codigo}', this.value)">
+            <option value="">Selecione a faixa...</option>
+            <option value="FAIXA 1" ${faixaSelecionada === "FAIXA 1" ? "selected" : ""}>FAIXA 1</option>
+            <option value="FAIXA 2" ${faixaSelecionada === "FAIXA 2" ? "selected" : ""}>FAIXA 2</option>
+            <option value="FAIXA 3" ${faixaSelecionada === "FAIXA 3" ? "selected" : ""}>FAIXA 3</option>
+            <option value="FAIXA 4" ${faixaSelecionada === "FAIXA 4" ? "selected" : ""}>FAIXA 4</option>
+          </select>
+          <select class="tecido-encosto" data-codigo="${p.codigo}"
+                  onchange="onTecidoEncostoChange('${p.codigo}', this.value)">
+            ${opcoesTecidos}
+          </select>
         </div>
-        ${linhas}
-        <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
       </div>`;
     }
+  });
+
+  return `<div class="orcamento-panel">
+    <h3>Orçamento atual</h3>
+    <div class="orcamento-acoes">
+      <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
+      <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
+      <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
+    </div>
+    ${linhas}
+    <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
+  </div>`;
+}
+
 
     function gerarTextoOrcamento(fatores) {
       const ids = Object.keys(orcamento);
@@ -1197,21 +1229,53 @@
     // Voz
     
     // Salva a faixa de encosto escolhida para cada código de produto
-    function salvarFaixaEncosto(codigo, valor) {
-      const key = "starmobile_faixas_encosto";
-      let faixas = {};
-      try {
-        faixas = JSON.parse(localStorage.getItem(key)) || {};
-      } catch (e) {
-        faixas = {};
-      }
-      if (valor) {
-        faixas[codigo] = valor;
-      } else {
-        delete faixas[codigo];
-      }
-      localStorage.setItem(key, JSON.stringify(faixas));
+    
+function getEncostoConfig() {
+  const key = "starmobile_encosto_config";
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) || {} : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveEncostoConfig(config) {
+  const key = "starmobile_encosto_config";
+  try {
+    localStorage.setItem(key, JSON.stringify(config || {}));
+  } catch (e) {
+    console.error("Erro ao salvar configuração de encosto:", e);
+  }
+}
+
+function onFaixaEncostoChange(codigo, faixa) {
+  const config = getEncostoConfig();
+  if (!config[codigo]) config[codigo] = {};
+  config[codigo].faixa = faixa || "";
+  config[codigo].tecido = ""; // sempre zera tecido ao trocar faixa
+  saveEncostoConfig(config);
+
+  const selectTecido = document.querySelector(`select.tecido-encosto[data-codigo="${codigo}"]`);
+  if (selectTecido) {
+    let opcoes = '<option value="">Selecione o tecido...</option>';
+    if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
+      tecidosPorFaixa[faixa].forEach(t => {
+        opcoes += `<option value="${t}">${t}</option>`;
+      });
     }
+    selectTecido.innerHTML = opcoes;
+  }
+}
+
+function onTecidoEncostoChange(codigo, tecido) {
+  const config = getEncostoConfig();
+  if (!config[codigo]) config[codigo] = {};
+  config[codigo].tecido = tecido || "";
+  saveEncostoConfig(config);
+}
+
+
 
 let recognition = null;
 
