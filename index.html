@@ -469,14 +469,16 @@
   <script>
     let produtos = [];
     let frasesUnicas = [];
-    let tecidosPorFaixa = {};
-    let faixasTecidos = [];
     let isAdmin = false;
     let modoOrcamento = false;
     // orcamento[id] = { quantidade: number }
     let orcamento = {};
     // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
+
+    // Tecidos por faixa (carregados de tecidos.json)
+    let tecidosPorFaixa = {};
+
 
     const campoBusca = document.getElementById("campoBusca");
     const statusSpan = document.getElementById("status");
@@ -738,6 +740,7 @@
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
+    // Carrega tecidos por faixa (tecidos.json)
     fetch("tecidos.json")
       .then(res => {
         if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
@@ -745,7 +748,6 @@
       })
       .then(data => {
         tecidosPorFaixa = data || {};
-        faixasTecidos = Object.keys(tecidosPorFaixa);
         console.log("Tecidos carregados:", tecidosPorFaixa);
       })
       .catch(err => {
@@ -925,93 +927,181 @@
     }
 
     
-function renderizarResumoOrcamento(fatores) {
-  const ids = Object.keys(orcamento);
-  if (!modoOrcamento) return "";
-  if (ids.length === 0) {
-    return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
-  }
-
-  let total = 0;
-  let linhas = "";
-
-  // Carrega configuração de Encosto (faixa + tecido) salva por código
-  const encostoConfig = getEncostoConfig();
-
-  ids.forEach(id => {
-    const item = orcamento[id];
-    const p = produtos.find(pp => String(pp._id) === String(id));
-    if (!p || p.preco_lista == null) return;
-    const valores = calcularValoresProduto(p, fatores);
-    const qtd = item.quantidade || 1;
-    const subtotal = valores.valorFinal * qtd;
-    total += subtotal;
-
-    const desc = p.chaves || "";
-    const tipoTexto = (p.chaves || "").toUpperCase();
-
-    const conf = encostoConfig[p.codigo] || {};
-    const faixaSelecionada = conf.faixa || "";
-    const tecidoSelecionado = conf.tecido || "";
-
-    let opcoesTecidos = '<option value="">Selecione o tecido...</option>';
-    if (faixaSelecionada && tecidosPorFaixa && tecidosPorFaixa[faixaSelecionada]) {
-      tecidosPorFaixa[faixaSelecionada].forEach(t => {
-        opcoesTecidos += `<option value="${t}" ${tecidoSelecionado === t ? "selected" : ""}>${t}</option>`;
-      });
+    // ===== Configuração de tecidos por parte (encosto, costas) =====
+    function getPartesConfig() {
+      const key = "starmobile_partes_tecidos";
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) || {} : {};
+      } catch (e) {
+        return {};
+      }
     }
 
-    // Linha principal do item
-    linhas += `<div class="orcamento-linha">
-      <div class="orcamento-desc">
-        <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
-        <span>${p.codigo} – ${desc}</span>
-      </div>
-      <div class="orcamento-valores">
-        R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
-      </div>
-    </div>`;
+    function savePartesConfig(cfg) {
+      const key = "starmobile_partes_tecidos";
+      try {
+        localStorage.setItem(key, JSON.stringify(cfg || {}));
+      } catch (e) {
+        console.error("Erro ao salvar configuração de tecidos:", e);
+      }
+    }
 
-    // Se for cadeira, banqueta ou poltrona, mostra o subtítulo Encosto + 2 listas
-    if (
-      tipoTexto.includes("CADEIRA") ||
-      tipoTexto.includes("BANQUETA") ||
-      tipoTexto.includes("POLTRONA")
-    ) {
-      linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-        <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-          <strong>Encosto:</strong>
-          <select class="faixa-encosto" data-codigo="${p.codigo}"
-                  onchange="onFaixaEncostoChange('${p.codigo}', this.value)">
-            <option value="">Selecione a faixa...</option>
-            <option value="FAIXA 1" ${faixaSelecionada === "FAIXA 1" ? "selected" : ""}>FAIXA 1</option>
-            <option value="FAIXA 2" ${faixaSelecionada === "FAIXA 2" ? "selected" : ""}>FAIXA 2</option>
-            <option value="FAIXA 3" ${faixaSelecionada === "FAIXA 3" ? "selected" : ""}>FAIXA 3</option>
-            <option value="FAIXA 4" ${faixaSelecionada === "FAIXA 4" ? "selected" : ""}>FAIXA 4</option>
-          </select>
-          <select class="tecido-encosto" data-codigo="${p.codigo}"
-                  onchange="onTecidoEncostoChange('${p.codigo}', this.value)">
-            ${opcoesTecidos}
-          </select>
+    function onFaixaParteChange(codigo, parte, faixa) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
+      cfg[codigo][parte].faixa = faixa || "";
+      cfg[codigo][parte].tecido = "";
+      savePartesConfig(cfg);
+
+      // Atualiza a lista de tecidos correspondente
+      const selectTecido = document.querySelector(
+        `select.tecido-${parte}[data-codigo="${codigo}"]`
+      );
+      if (selectTecido) {
+        let opts = '<option value="">Selecione o tecido...</option>';
+        if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
+          tecidosPorFaixa[faixa].forEach(t => {
+            opts += `<option value="${t}">${t}</option>`;
+          });
+        }
+        selectTecido.innerHTML = opts;
+      }
+    }
+
+    function onTecidoParteChange(codigo, parte, tecido) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
+      cfg[codigo][parte].tecido = tecido || "";
+      savePartesConfig(cfg);
+    }
+
+function renderizarResumoOrcamento(fatores) {
+      const ids = Object.keys(orcamento);
+      if (!modoOrcamento) return "";
+      if (ids.length === 0) {
+        return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
+      }
+
+      let total = 0;
+      let linhas = "";
+
+      const partesConfig = getPartesConfig();
+
+      ids.forEach(id => {
+        const item = orcamento[id];
+        const p = produtos.find(pp => String(pp._id) === String(id));
+        if (!p || p.preco_lista == null) return;
+        const valores = calcularValoresProduto(p, fatores);
+        const qtd = item.quantidade || 1;
+        const subtotal = valores.valorFinal * qtd;
+        total += subtotal;
+
+        const desc = p.chaves || "";
+        const tipoTexto = desc.toUpperCase();
+
+        // Linha principal do item
+        linhas += `<div class="orcamento-linha">
+          <div class="orcamento-desc">
+            <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
+            <span>${p.codigo} – ${desc}</span>
+          </div>
+          <div class="orcamento-valores">
+            R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
+          </div>
+        </div>`;
+
+        // Se for cadeira, banqueta ou poltrona, mostra configurações de Encosto e Costas
+        if (
+          tipoTexto.includes("CADEIRA") ||
+          tipoTexto.includes("BANQUETA") ||
+          tipoTexto.includes("POLTRONA")
+        ) {
+          const confItem = partesConfig[p.codigo] || {};
+          const encosto = confItem.encosto || {};
+          const costas = confItem.costas || {};
+
+          const faixaEncosto = encosto.faixa || "";
+          const tecidoEncosto = encosto.tecido || "";
+          const faixaCostas = costas.faixa || "";
+          const tecidoCostas = costas.tecido || "";
+
+          // Opções de faixa
+          const faixas = ["FAIXA 1", "FAIXA 2", "FAIXA 3", "FAIXA 4"];
+
+          let opcoesFaixaEnc = '<option value="">Selecione a faixa...</option>';
+          faixas.forEach(fx => {
+            opcoesFaixaEnc += `<option value="${fx}" ${faixaEncosto === fx ? "selected" : ""}>${fx}</option>`;
+          });
+
+          let opcoesFaixaCostas = '<option value="">Selecione a faixa...</option>';
+          faixas.forEach(fx => {
+            opcoesFaixaCostas += `<option value="${fx}" ${faixaCostas === fx ? "selected" : ""}>${fx}</option>`;
+          });
+
+          // Opções de tecido para Encosto
+          let opcoesTecidoEnc = '<option value="">Selecione o tecido...</option>';
+          if (faixaEncosto && tecidosPorFaixa && tecidosPorFaixa[faixaEncosto]) {
+            tecidosPorFaixa[faixaEncosto].forEach(t => {
+              opcoesTecidoEnc += `<option value="${t}" ${tecidoEncosto === t ? "selected" : ""}>${t}</option>`;
+            });
+          }
+
+          // Opções de tecido para Costas
+          let opcoesTecidoCostas = '<option value="">Selecione o tecido...</option>';
+          if (faixaCostas && tecidosPorFaixa && tecidosPorFaixa[faixaCostas]) {
+            tecidosPorFaixa[faixaCostas].forEach(t => {
+              opcoesTecidoCostas += `<option value="${t}" ${tecidoCostas === t ? "selected" : ""}>${t}</option>`;
+            });
+          }
+
+          // Bloco Encosto
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Encosto:</strong>
+              <select class="faixa-encosto" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'encosto', this.value)">
+                ${opcoesFaixaEnc}
+              </select>
+              <select class="tecido-encosto" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'encosto', this.value)">
+                ${opcoesTecidoEnc}
+              </select>
+            </div>
+          </div>`;
+
+          // Bloco Costas
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Costas:</strong>
+              <select class="faixa-costas" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'costas', this.value)">
+                ${opcoesFaixaCostas}
+              </select>
+              <select class="tecido-costas" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'costas', this.value)">
+                ${opcoesTecidoCostas}
+              </select>
+            </div>
+          </div>`;
+        }
+      });
+
+      return `<div class="orcamento-panel">
+        <h3>Orçamento atual</h3>
+        <div class="orcamento-acoes">
+          <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
+          <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
+          <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
         </div>
+        ${linhas}
+        <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
       </div>`;
     }
-  });
 
-  return `<div class="orcamento-panel">
-    <h3>Orçamento atual</h3>
-    <div class="orcamento-acoes">
-      <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
-      <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
-      <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
-    </div>
-    ${linhas}
-    <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
-  </div>`;
-}
-
-
-    function gerarTextoOrcamento(fatores) {
+function gerarTextoOrcamento(fatores) {
       const ids = Object.keys(orcamento);
       if (ids.length === 0) {
         return "Orçamento vazio.";
@@ -1227,57 +1317,7 @@ function renderizarResumoOrcamento(fatores) {
     });
 
     // Voz
-    
-    // Salva a faixa de encosto escolhida para cada código de produto
-    
-function getEncostoConfig() {
-  const key = "starmobile_encosto_config";
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) || {} : {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function saveEncostoConfig(config) {
-  const key = "starmobile_encosto_config";
-  try {
-    localStorage.setItem(key, JSON.stringify(config || {}));
-  } catch (e) {
-    console.error("Erro ao salvar configuração de encosto:", e);
-  }
-}
-
-function onFaixaEncostoChange(codigo, faixa) {
-  const config = getEncostoConfig();
-  if (!config[codigo]) config[codigo] = {};
-  config[codigo].faixa = faixa || "";
-  config[codigo].tecido = ""; // sempre zera tecido ao trocar faixa
-  saveEncostoConfig(config);
-
-  const selectTecido = document.querySelector(`select.tecido-encosto[data-codigo="${codigo}"]`);
-  if (selectTecido) {
-    let opcoes = '<option value="">Selecione o tecido...</option>';
-    if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
-      tecidosPorFaixa[faixa].forEach(t => {
-        opcoes += `<option value="${t}">${t}</option>`;
-      });
-    }
-    selectTecido.innerHTML = opcoes;
-  }
-}
-
-function onTecidoEncostoChange(codigo, tecido) {
-  const config = getEncostoConfig();
-  if (!config[codigo]) config[codigo] = {};
-  config[codigo].tecido = tecido || "";
-  saveEncostoConfig(config);
-}
-
-
-
-let recognition = null;
+    let recognition = null;
 
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
