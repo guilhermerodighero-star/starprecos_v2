@@ -476,9 +476,74 @@
     // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
 
-    // Tecidos por faixa (carregados de tecidos.json)
+    // Tecidos por faixa (carregados de tecidos.json) e configuração por partes
+    // Estrutura em localStorage (starmobile_partes_tecidos):
+    // {
+    //   "CODIGO": {
+    //     encosto: { faixa: "FAIXA 1", tecido: "ABC123" },
+    //     costas:  { faixa: "FAIXA 2", tecido: "DEF456" },
+    //     assento: { faixa: "FAIXA 3", tecido: "GHI789" },
+    //     observacoes: "texto livre"
+    //   },
+    //   ...
+    // }
     let tecidosPorFaixa = {};
 
+    function getPartesConfig() {
+      const key = "starmobile_partes_tecidos";
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) || {} : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function savePartesConfig(cfg) {
+      const key = "starmobile_partes_tecidos";
+      try {
+        localStorage.setItem(key, JSON.stringify(cfg || {}));
+      } catch (e) {
+        console.error("Erro ao salvar configuração de tecidos:", e);
+      }
+    }
+
+    function onFaixaParteChange(codigo, parte, faixa) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
+      cfg[codigo][parte].faixa = faixa || "";
+      cfg[codigo][parte].tecido = "";
+      savePartesConfig(cfg);
+
+      const selectTecido = document.querySelector(
+        `select.tecido-${parte}[data-codigo="${codigo}"]`
+      );
+      if (selectTecido) {
+        let opts = '<option value="">Selecione o tecido...</option>';
+        if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
+          tecidosPorFaixa[faixa].forEach(t => {
+            opts += `<option value="${t}">${t}</option>`;
+          });
+        }
+        selectTecido.innerHTML = opts;
+      }
+    }
+
+    function onTecidoParteChange(codigo, parte, tecido) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
+      cfg[codigo][parte].tecido = tecido || "";
+      savePartesConfig(cfg);
+    }
+
+    function onObsParteChange(codigo, obs) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      cfg[codigo].observacoes = obs || "";
+      savePartesConfig(cfg);
+    }
 
     const campoBusca = document.getElementById("campoBusca");
     const statusSpan = document.getElementById("status");
@@ -740,7 +805,6 @@
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
-    // Carrega tecidos por faixa (tecidos.json)
     fetch("tecidos.json")
       .then(res => {
         if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
@@ -926,59 +990,7 @@
       resultadoDiv.innerHTML = html;
     }
 
-    
-    // ===== Configuração de tecidos por parte (encosto, costas) =====
-    function getPartesConfig() {
-      const key = "starmobile_partes_tecidos";
-      try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) || {} : {};
-      } catch (e) {
-        return {};
-      }
-    }
-
-    function savePartesConfig(cfg) {
-      const key = "starmobile_partes_tecidos";
-      try {
-        localStorage.setItem(key, JSON.stringify(cfg || {}));
-      } catch (e) {
-        console.error("Erro ao salvar configuração de tecidos:", e);
-      }
-    }
-
-    function onFaixaParteChange(codigo, parte, faixa) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
-      cfg[codigo][parte].faixa = faixa || "";
-      cfg[codigo][parte].tecido = "";
-      savePartesConfig(cfg);
-
-      // Atualiza a lista de tecidos correspondente
-      const selectTecido = document.querySelector(
-        `select.tecido-${parte}[data-codigo="${codigo}"]`
-      );
-      if (selectTecido) {
-        let opts = '<option value="">Selecione o tecido...</option>';
-        if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
-          tecidosPorFaixa[faixa].forEach(t => {
-            opts += `<option value="${t}">${t}</option>`;
-          });
-        }
-        selectTecido.innerHTML = opts;
-      }
-    }
-
-    function onTecidoParteChange(codigo, parte, tecido) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
-      cfg[codigo][parte].tecido = tecido || "";
-      savePartesConfig(cfg);
-    }
-
-function renderizarResumoOrcamento(fatores) {
+    function renderizarResumoOrcamento(fatores) {
       const ids = Object.keys(orcamento);
       if (!modoOrcamento) return "";
       if (ids.length === 0) {
@@ -1000,9 +1012,8 @@ function renderizarResumoOrcamento(fatores) {
         total += subtotal;
 
         const desc = p.chaves || "";
-        const tipoTexto = desc.toUpperCase();
+        const tipoTexto = (p.chaves || "").toUpperCase();
 
-        // Linha principal do item
         linhas += `<div class="orcamento-linha">
           <div class="orcamento-desc">
             <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
@@ -1013,77 +1024,92 @@ function renderizarResumoOrcamento(fatores) {
           </div>
         </div>`;
 
-        // Se for cadeira, banqueta ou poltrona, mostra configurações de Encosto e Costas
+        // Para cadeiras, banquetas e poltronas, exibir blocos de configuração
         if (
           tipoTexto.includes("CADEIRA") ||
           tipoTexto.includes("BANQUETA") ||
           tipoTexto.includes("POLTRONA")
         ) {
-          const confItem = partesConfig[p.codigo] || {};
-          const encosto = confItem.encosto || {};
-          const costas = confItem.costas || {};
+          const cfgItem = partesConfig[p.codigo] || {};
+          const encosto = cfgItem.encosto || {};
+          const costas  = cfgItem.costas  || {};
+          const assento = cfgItem.assento || {};
+          const obs     = cfgItem.observacoes || "";
 
-          const faixaEncosto = encosto.faixa || "";
-          const tecidoEncosto = encosto.tecido || "";
-          const faixaCostas = costas.faixa || "";
-          const tecidoCostas = costas.tecido || "";
-
-          // Opções de faixa
           const faixas = ["FAIXA 1", "FAIXA 2", "FAIXA 3", "FAIXA 4"];
 
-          let opcoesFaixaEnc = '<option value="">Selecione a faixa...</option>';
-          faixas.forEach(fx => {
-            opcoesFaixaEnc += `<option value="${fx}" ${faixaEncosto === fx ? "selected" : ""}>${fx}</option>`;
-          });
-
-          let opcoesFaixaCostas = '<option value="">Selecione a faixa...</option>';
-          faixas.forEach(fx => {
-            opcoesFaixaCostas += `<option value="${fx}" ${faixaCostas === fx ? "selected" : ""}>${fx}</option>`;
-          });
-
-          // Opções de tecido para Encosto
-          let opcoesTecidoEnc = '<option value="">Selecione o tecido...</option>';
-          if (faixaEncosto && tecidosPorFaixa && tecidosPorFaixa[faixaEncosto]) {
-            tecidosPorFaixa[faixaEncosto].forEach(t => {
-              opcoesTecidoEnc += `<option value="${t}" ${tecidoEncosto === t ? "selected" : ""}>${t}</option>`;
+          function montarOpcoesFaixa(selecionada) {
+            let opts = '<option value="">Selecione a faixa...</option>';
+            faixas.forEach(fx => {
+              const sel = selecionada === fx ? "selected" : "";
+              opts += `<option value="${fx}" ${sel}>${fx}</option>`;
             });
+            return opts;
           }
 
-          // Opções de tecido para Costas
-          let opcoesTecidoCostas = '<option value="">Selecione o tecido...</option>';
-          if (faixaCostas && tecidosPorFaixa && tecidosPorFaixa[faixaCostas]) {
-            tecidosPorFaixa[faixaCostas].forEach(t => {
-              opcoesTecidoCostas += `<option value="${t}" ${tecidoCostas === t ? "selected" : ""}>${t}</option>`;
-            });
+          function montarOpcoesTecido(faixa, selecionado) {
+            let opts = '<option value="">Selecione o tecido...</option>';
+            if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
+              tecidosPorFaixa[faixa].forEach(t => {
+                const sel = selecionado === t ? "selected" : "";
+                opts += `<option value="${t}" ${sel}>${t}</option>`;
+              });
+            }
+            return opts;
           }
 
-          // Bloco Encosto
+          // ENCOSTO
           linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
             <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
               <strong>Encosto:</strong>
               <select class="faixa-encosto" data-codigo="${p.codigo}"
                       onchange="onFaixaParteChange('${p.codigo}', 'encosto', this.value)">
-                ${opcoesFaixaEnc}
+                ${montarOpcoesFaixa(encosto.faixa || "")}
               </select>
               <select class="tecido-encosto" data-codigo="${p.codigo}"
                       onchange="onTecidoParteChange('${p.codigo}', 'encosto', this.value)">
-                ${opcoesTecidoEnc}
+                ${montarOpcoesTecido(encosto.faixa || "", encosto.tecido || "")}
               </select>
             </div>
           </div>`;
 
-          // Bloco Costas
+          // COSTAS
           linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
             <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
               <strong>Costas:</strong>
               <select class="faixa-costas" data-codigo="${p.codigo}"
                       onchange="onFaixaParteChange('${p.codigo}', 'costas', this.value)">
-                ${opcoesFaixaCostas}
+                ${montarOpcoesFaixa(costas.faixa || "")}
               </select>
               <select class="tecido-costas" data-codigo="${p.codigo}"
                       onchange="onTecidoParteChange('${p.codigo}', 'costas', this.value)">
-                ${opcoesTecidoCostas}
+                ${montarOpcoesTecido(costas.faixa || "", costas.tecido || "")}
               </select>
+            </div>
+          </div>`;
+
+          // ASSENTO
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Assento:</strong>
+              <select class="faixa-assento" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'assento', this.value)">
+                ${montarOpcoesFaixa(assento.faixa || "")}
+              </select>
+              <select class="tecido-assento" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'assento', this.value)">
+                ${montarOpcoesTecido(assento.faixa || "", assento.tecido || "")}
+              </select>
+            </div>
+          </div>`;
+
+          // OBSERVAÇÕES
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: flex-start; flex-direction: column;">
+              <strong>Observações:</strong>
+              <textarea class="obs-partes" data-codigo="${p.codigo}" rows="2"
+                        oninput="onObsParteChange('${p.codigo}', this.value)"
+                        style="width: 100%; max-width: 520px; font-size: 12px; padding: 4px 6px; border-radius: 4px; border: 1px solid #ccc; resize: vertical;">${obs}</textarea>
             </div>
           </div>`;
         }
@@ -1100,7 +1126,6 @@ function renderizarResumoOrcamento(fatores) {
         <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
       </div>`;
     }
-
 function gerarTextoOrcamento(fatores) {
       const ids = Object.keys(orcamento);
       if (ids.length === 0) {
