@@ -34,10 +34,8 @@
     }
     .header-actions {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      justify-content: flex-end;
     }
     main {
       padding: 16px;
@@ -224,7 +222,7 @@
       justify-content: space-between;
       gap: 8px;
       border-top: 1px solid #f0f0f0;
-      align-items: flex-start;
+      align-items: center;
     }
     .orcamento-linha:first-child {
       border-top: none;
@@ -313,50 +311,6 @@
       border-color: #111;
     }
 
-    /* Blocos de configuração de pedido */
-    .pedido-config {
-      margin-top: 8px;
-      padding: 8px;
-      border-radius: 8px;
-      background: #fafafa;
-      border: 1px dashed #ddd;
-      font-size: 12px;
-    }
-    .pedido-titulo {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .pedido-linha {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 4px;
-    }
-    .pedido-label {
-      width: 60px;
-      font-weight: 500;
-    }
-    .pedido-selects select {
-      min-width: 120px;
-    }
-    .pedido-obs label {
-      display: block;
-      margin-top: 6px;
-      margin-bottom: 2px;
-      font-size: 11px;
-    }
-    .pedido-obs textarea {
-      width: 100%;
-      min-height: 40px;
-      resize: vertical;
-      padding: 6px 8px;
-      font-size: 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-
     /* Modal de imagem ampliada */
     #imageModal {
       position: fixed;
@@ -416,14 +370,13 @@
     <div>
       <h1>Consulta de Preços – Starmobile</h1>
       <div class="tagline">
-        Uso interno: pesquisa por código, nome e palavras-chave, com cálculo automático de IPI, frete, markup, desconto autorizado, modo orçamento, modo pedido e imagens dos produtos.
+        Uso interno: pesquisa por código, nome e palavras-chave, com cálculo automático de IPI, frete, markup, desconto autorizado, modo orçamento e imagens dos produtos.
       </div>
     </div>
     <div class="header-actions">
       <span id="orcamentoBadge" class="badge-orcamento" style="display:none;">Modo orçamento</span>
       <span id="adminBadge" class="badge-admin" style="display:none;">Modo gerente</span>
       <button id="btnToggleOrcamento">🧾 Modo orçamento</button>
-      <button id="btnTogglePedido">🪑 Modo pedido</button>
       <button id="btnToggleAdmin">🔐 Modo gerente</button>
     </div>
   </header>
@@ -464,11 +417,11 @@
         </div>
       </div>
 
-      <!-- Campo de busca -->
+      <!-- Campo de busca em uma linha -->
       <div class="controls">
         <input id="campoBusca" type="text" placeholder="Ex.: 1467PM, CADEIRA ATENA COM DEBRUM FAIXA 2, ZOE VIDRO 2,20..." />
       </div>
-      <!-- Botões abaixo do campo -->
+      <!-- Botões em outra linha abaixo -->
       <div class="controls controls-buttons">
         <button id="btnFalar">🎤 <span>Falar</span></button>
         <button id="btnBuscar" class="primary">🔎 <span>Buscar</span></button>
@@ -518,15 +471,10 @@
     let frasesUnicas = [];
     let isAdmin = false;
     let modoOrcamento = false;
-    let modoPedido = false;
-
+    // orcamento[id] = { quantidade: number }
     let orcamento = {};
-    let pedidoConfig = {};
-
+    // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
-
-    let tecidosPorFaixa = {};
-    let faixasDisponiveis = [];
 
     const campoBusca = document.getElementById("campoBusca");
     const statusSpan = document.getElementById("status");
@@ -547,7 +495,6 @@
     const adminBadge = document.getElementById("adminBadge");
 
     const btnToggleOrcamento = document.getElementById("btnToggleOrcamento");
-    const btnTogglePedido = document.getElementById("btnTogglePedido");
     const orcamentoBadge = document.getElementById("orcamentoBadge");
     const orcamentoHeaderDiv = document.getElementById("orcamentoHeader");
 
@@ -569,6 +516,7 @@
 
     const SENHA_GERENTE = "STAR2025";
 
+    // Modal imagem
     const imageModal = document.getElementById("imageModal");
     const modalImage = document.getElementById("modalImage");
 
@@ -580,13 +528,14 @@
       imageModal.style.display = "none";
       modalImage.src = "";
     });
+    // expor função para o onclick inline
     window.abrirImagemModal = abrirImagemModal;
 
     function normalizar(str) {
       return String(str || "")
         .toUpperCase()
         .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")
         .trim();
     }
 
@@ -628,12 +577,12 @@
         .replace(/vírgula/g, ".")
         .replace(/virgula/g, ".");
 
-      lower = lower.replace(/(\d{3,4})/g, (m, a) => {
+      lower = lower.replace(/\b(\d{3,4})\b/g, (m, a) => {
         const conv = numeroInteiroParaMetro(a);
         return conv !== null ? conv : m;
       });
 
-      lower = lower.replace(/(\d+)[\.](\d{2})/g, (m, a, b) => {
+      lower = lower.replace(/\b(\d+)[\.](\d{2})\b/g, (m, a, b) => {
         const num = parseFloat(a + "." + b);
         if (isNaN(num)) return m;
         return num.toFixed(1);
@@ -741,13 +690,6 @@
       }
     }
 
-    function aplicarModoPedidoUI() {
-      btnTogglePedido.textContent = modoPedido ? "🪑 Sair do modo pedido" : "🪑 Modo pedido";
-      if (modoOrcamento) {
-        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
-      }
-    }
-
     function aplicarFiltroCategoriaUI() {
       const buttons = [btnCatTodos, btnCatMesas, btnCatCadeiras, btnCatPoltronas];
       buttons.forEach(b => b.classList.remove("active"));
@@ -794,33 +736,11 @@
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
-    fetch("tecidos.json")
-      .then(res => {
-        if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
-        return res.json();
-      })
-      .then(data => {
-        tecidosPorFaixa = data || {};
-        faixasDisponiveis = Object.keys(tecidosPorFaixa);
-        console.log("Tecidos carregados:", tecidosPorFaixa);
-      })
-      .catch(err => {
-        console.error("Erro ao carregar tecidos.json:", err);
-      });
-
     if (localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
       isAdmin = true;
     }
     aplicarModoAdminUI();
     aplicarFiltroCategoriaUI();
-
-    function isProdutoComEstofadoConfiguravel(p) {
-      const tokens = new Set();
-      (p._camposNorm || []).forEach(cf => {
-        cf.split(/\s+/).forEach(t => tokens.add(t));
-      });
-      return tokens.has("CADEIRA") || tokens.has("BANQUETA") || tokens.has("POLTRONA");
-    }
 
     function buscarProduto(termoBruto) {
       let termoOriginal = String(termoBruto || "").trim();
@@ -844,10 +764,12 @@
 
       let matches = [];
 
+      // 1) Código exato
       const exato = produtos.find(p => p._codigoNorm === termoNorm);
       if (exato) {
         matches = [exato];
       } else {
+        // 2) Código parcial
         const termoSemEspaco = termoNorm.replace(/\s+/g, "");
         const codigoParcial = produtos.find(p =>
           p._codigoNorm.replace(/\s+/g, "").includes(termoSemEspaco)
@@ -855,6 +777,7 @@
         if (codigoParcial) {
           matches = [codigoParcial];
         } else {
+          // 3) Frases completas
           const frasesBuscadas = frasesUnicas.filter(f => {
             const fTokens = f.split(/\s+/).filter(Boolean);
             if (fTokens.length === 0) return false;
@@ -872,6 +795,7 @@
               )
             );
           } else {
+            // 4) Fallback por tokens
             const tokens = termoTokens;
             matches = produtos.filter(p => {
               const texto = p._codigoNorm + " " + p._camposNorm.join(" ");
@@ -881,6 +805,7 @@
         }
       }
 
+      // Filtrar por dimensões numéricas (quando houver)
       if (numerosBusca.length > 0) {
         const tol = 0.01;
         matches = matches.filter(p => {
@@ -891,6 +816,7 @@
         });
       }
 
+      // Filtrar por categoria (MESA, CADEIRA, POLTRONA)
       if (categoriaFiltro) {
         matches = matches.filter(p =>
           p._camposNorm.some(cf => cf.split(/\s+/).includes(categoriaFiltro))
@@ -922,12 +848,14 @@
 
         html += `<div class="item">`;
 
+        // Coluna da imagem
         html += `<div class="produto-imagem-wrapper">
           <img src="imagens/${p.codigo}.jpg" alt="Imagem ${p.codigo}"
                onclick="abrirImagemModal('imagens/${p.codigo}.jpg')"
                onerror="this.style.display='none';" />
         </div>`;
 
+        // Coluna de informações
         html += `<div class="produto-info">`;
         html += `<div><strong>Código:</strong> ${p.codigo}</div>`;
         if (p.chaves) {
@@ -965,8 +893,8 @@
           html += `<div class="preco-sec">Sem preço de tabela cadastrado.</div>`;
         }
 
-        html += `</div>`;
-        html += `</div>`;
+        html += `</div>`; // produto-info
+        html += `</div>`; // item
       });
 
       if (fatores.avisoDesconto) {
@@ -980,64 +908,6 @@
       resultadoDiv.innerHTML = html;
     }
 
-    function renderFaixaSelect(id, secao) {
-      const conf = (pedidoConfig[id] && pedidoConfig[id][secao]) || {};
-      const faixaAtual = conf.faixa || "";
-      let options = `<option value="">Faixa...</option>`;
-      faixasDisponiveis.forEach(f => {
-        const sel = f === faixaAtual ? "selected" : "";
-        options += `<option value="${f}" ${sel}>${f}</option>`;
-      });
-      return `<select class="faixa-select" data-id="${id}" data-secao="${secao}">
-        ${options}
-      </select>`;
-    }
-
-    function renderTecidoSelect(id, secao) {
-      const conf = (pedidoConfig[id] && pedidoConfig[id][secao]) || {};
-      const faixa = conf.faixa || "";
-      const tecidoAtual = conf.tecido || "";
-      const tecidos = faixa && tecidosPorFaixa[faixa] ? tecidosPorFaixa[faixa] : [];
-      let options = `<option value="">Tecido...</option>`;
-      tecidos.forEach(t => {
-        const sel = t === tecidoAtual ? "selected" : "";
-        options += `<option value="${t}" ${sel}>${t}</option>`;
-      });
-      return `<select class="tecido-select" data-id="${id}" data-secao="${secao}">
-        ${options}
-      </select>`;
-    }
-
-    function renderBlocoPedido(id, p) {
-      if (!modoPedido) return "";
-      if (!isProdutoComEstofadoConfiguravel(p)) return "";
-      const confItem = pedidoConfig[id] || {};
-      const obs = confItem.observacoes || "";
-      const secoes = ["encosto", "costas", "assento"];
-      const labels = { encosto: "Encosto", costas: "Costas", assento: "Assento" };
-
-      let html = `<div class="pedido-config">
-        <div class="pedido-titulo">Configuração do pedido</div>`;
-
-      secoes.forEach(secao => {
-        html += `<div class="pedido-linha">
-          <div class="pedido-label">${labels[secao]}:</div>
-          <div class="pedido-selects">
-            ${renderFaixaSelect(id, secao)}
-            ${renderTecidoSelect(id, secao)}
-          </div>
-        </div>`;
-      });
-
-      html += `<div class="pedido-obs">
-        <label>Observações do pedido</label>
-        <textarea class="obs-pedido" data-id="${id}">${obs}</textarea>
-      </div>`;
-
-      html += `</div>`;
-      return html;
-    }
-
     function renderizarResumoOrcamento(fatores) {
       const ids = Object.keys(orcamento);
       if (!modoOrcamento) return "";
@@ -1047,6 +917,9 @@
 
       let total = 0;
       let linhas = "";
+
+      // Carrega faixas de encosto salvas (por código do produto)
+      const faixasEncosto = JSON.parse(localStorage.getItem("starmobile_faixas_encosto") || "{}");
 
       ids.forEach(id => {
         const item = orcamento[id];
@@ -1058,6 +931,10 @@
         total += subtotal;
 
         const desc = p.chaves || "";
+        const tipoTexto = (p.chaves || "").toUpperCase();
+        const faixaSelecionada = faixasEncosto[p.codigo] || "";
+
+        // Linha principal do item
         linhas += `<div class="orcamento-linha">
           <div class="orcamento-desc">
             <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
@@ -1068,7 +945,26 @@
           </div>
         </div>`;
 
-        linhas += renderBlocoPedido(id, p);
+        // Se for cadeira, banqueta ou poltrona, mostra o subtítulo de Encosto
+        if (
+          tipoTexto.includes("CADEIRA") ||
+          tipoTexto.includes("BANQUETA") ||
+          tipoTexto.includes("POLTRONA")
+        ) {
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center;">
+              <strong>Encosto:</strong>
+              <select class="faixa-encosto" data-codigo="${p.codigo}"
+                      onchange="salvarFaixaEncosto('${p.codigo}', this.value)">
+                <option value="">Selecione...</option>
+                <option value="FAIXA 1" ${faixaSelecionada === "FAIXA 1" ? "selected" : ""}>FAIXA 1</option>
+                <option value="FAIXA 2" ${faixaSelecionada === "FAIXA 2" ? "selected" : ""}>FAIXA 2</option>
+                <option value="FAIXA 3" ${faixaSelecionada === "FAIXA 3" ? "selected" : ""}>FAIXA 3</option>
+                <option value="FAIXA 4" ${faixaSelecionada === "FAIXA 4" ? "selected" : ""}>FAIXA 4</option>
+              </select>
+            </div>
+          </div>`;
+        }
       });
 
       return `<div class="orcamento-panel">
@@ -1098,11 +994,7 @@
 
       if (cliente || telefone || vendedor || validade) {
         linhas.push(
-          `Cliente: ${cliente || "-"}
-Telefone: ${telefone || "-"}
-Vendedor: ${vendedor || "-"}
-Validade: ${validade || "7 dias"}
-`
+          `Cliente: ${cliente || "-"}\nTelefone: ${telefone || "-"}\nVendedor: ${vendedor || "-"}\nValidade: ${validade || "7 dias"}\n`
         );
       }
 
@@ -1117,16 +1009,12 @@ Validade: ${validade || "7 dias"}
         const desc = p.chaves || "";
 
         linhas.push(
-          `${p.codigo} – ${desc}
-Valor: R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}`
+          `${p.codigo} – ${desc}\nValor: R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}`
         );
       });
 
-      linhas.push(`
-Total do orçamento: R$ ${formatarPreco(total)}`);
-      return linhas.join("
-
-");
+      linhas.push(`\nTotal do orçamento: R$ ${formatarPreco(total)}`);
+      return linhas.join("\n\n");
     }
 
     btnBuscar.addEventListener("click", () => {
@@ -1139,6 +1027,7 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
+    // Botão LIMPAR busca
     btnLimparBusca.addEventListener("click", () => {
       campoBusca.value = "";
       statusSpan.textContent = "";
@@ -1184,11 +1073,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       aplicarModoOrcamentoUI();
     });
 
-    btnTogglePedido.addEventListener("click", () => {
-      modoPedido = !modoPedido;
-      aplicarModoPedidoUI();
-    });
-
     btnSalvarConfig.addEventListener("click", () => {
       if (!isAdmin) return;
       const ipiVal = obterPercentual(ipiInput.value);
@@ -1211,6 +1095,7 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
+    // Filtros de categoria
     btnCatTodos.addEventListener("click", () => {
       categoriaFiltro = "";
       aplicarFiltroCategoriaUI();
@@ -1232,82 +1117,48 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
     });
 
+    // Delegação de eventos para orçamento
     resultadoDiv.addEventListener("change", (event) => {
       const target = event.target;
+      if (!modoOrcamento) return;
 
-      if (modoOrcamento) {
-        if (target.classList.contains("chk-orcamento")) {
-          const id = target.getAttribute("data-id");
-          if (target.checked) {
-            const qtdInput = resultadoDiv.querySelector(`.input-qtd-orcamento[data-id="${id}"]`);
-            let qtd = parseInt(qtdInput ? qtdInput.value : "1", 10);
-            if (isNaN(qtd) || qtd < 1) qtd = 1;
-            orcamento[id] = { quantidade: qtd };
-          } else {
-            delete orcamento[id];
-          }
+      // Checkbox incluir no orçamento
+      if (target.classList.contains("chk-orcamento")) {
+        const id = target.getAttribute("data-id");
+        const p = produtos.find(pp => String(pp._id) === String(id));
 
-          if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
-          else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        if (target.checked) {
+          const qtdInput = resultadoDiv.querySelector(`.input-qtd-orcamento[data-id="${id}"]`);
+          let qtd = parseInt(qtdInput ? qtdInput.value : "1", 10);
+          if (isNaN(qtd) || qtd < 1) qtd = 1;
+          orcamento[id] = { quantidade: qtd };
+        } else {
+          delete orcamento[id];
         }
 
-        if (target.classList.contains("input-qtd-orcamento")) {
-          const id = target.getAttribute("data-id");
-          let qtd = parseInt(target.value, 10);
-          if (isNaN(qtd) || qtd < 1) {
-            qtd = 1;
-            target.value = "1";
-          }
+        if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+        else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      }
 
-          if (orcamento[id]) {
-            orcamento[id].quantidade = qtd;
-          } else {
-            orcamento[id] = { quantidade: qtd };
-            const chk = resultadoDiv.querySelector(`.chk-orcamento[data-id="${id}"]`);
-            if (chk) chk.checked = true;
-          }
-
-          if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
-          else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      // Quantidade
+      if (target.classList.contains("input-qtd-orcamento")) {
+        const id = target.getAttribute("data-id");
+        let qtd = parseInt(target.value, 10);
+        if (isNaN(qtd) || qtd < 1) {
+          qtd = 1;
+          target.value = "1";
         }
-      }
 
-      if (target.classList.contains("faixa-select")) {
-        const id = target.getAttribute("data-id");
-        const secao = target.getAttribute("data-secao");
-        const faixa = target.value;
-        if (!pedidoConfig[id]) pedidoConfig[id] = {};
-        if (!pedidoConfig[id][secao]) pedidoConfig[id][secao] = {};
-        pedidoConfig[id][secao].faixa = faixa;
-        pedidoConfig[id][secao].tecido = "";
-
-        const tecidoSelect = resultadoDiv.querySelector(`select.tecido-select[data-id="${id}"][data-secao="${secao}"]`);
-        if (tecidoSelect) {
-          const lista = faixa && tecidosPorFaixa[faixa] ? tecidosPorFaixa[faixa] : [];
-          let opts = '<option value="">Tecido...</option>';
-          lista.forEach(t => {
-            opts += `<option value="${t}">${t}</option>`;
-          });
-          tecidoSelect.innerHTML = opts;
+        if (orcamento[id]) {
+          orcamento[id].quantidade = qtd;
+        } else {
+          orcamento[id] = { quantidade: qtd };
+          const chk = resultadoDiv.querySelector(`.chk-orcamento[data-id="${id}"]`);
+          if (chk) chk.checked = true;
         }
-      }
 
-      if (target.classList.contains("tecido-select")) {
-        const id = target.getAttribute("data-id");
-        const secao = target.getAttribute("data-secao");
-        const tecido = target.value;
-        if (!pedidoConfig[id]) pedidoConfig[id] = {};
-        if (!pedidoConfig[id][secao]) pedidoConfig[id][secao] = {};
-        pedidoConfig[id][secao].tecido = tecido;
-      }
-    });
-
-    resultadoDiv.addEventListener("input", (event) => {
-      const target = event.target;
-      if (target.classList.contains("obs-pedido")) {
-        const id = target.getAttribute("data-id");
-        if (!pedidoConfig[id]) pedidoConfig[id] = {};
-        pedidoConfig[id].observacoes = target.value;
+        if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+        else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
       }
     });
 
@@ -1317,7 +1168,6 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
 
       if (target.id === "btnLimparOrcamento") {
         orcamento = {};
-        pedidoConfig = {};
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
         } else {
@@ -1344,7 +1194,26 @@ Total do orçamento: R$ ${formatarPreco(total)}`);
       }
     });
 
-    let recognition = null;
+    // Voz
+    
+    // Salva a faixa de encosto escolhida para cada código de produto
+    function salvarFaixaEncosto(codigo, valor) {
+      const key = "starmobile_faixas_encosto";
+      let faixas = {};
+      try {
+        faixas = JSON.parse(localStorage.getItem(key)) || {};
+      } catch (e) {
+        faixas = {};
+      }
+      if (valor) {
+        faixas[codigo] = valor;
+      } else {
+        delete faixas[codigo];
+      }
+      localStorage.setItem(key, JSON.stringify(faixas));
+    }
+
+let recognition = null;
 
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
