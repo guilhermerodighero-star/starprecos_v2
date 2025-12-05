@@ -471,12 +471,15 @@
     let frasesUnicas = [];
     let isAdmin = false;
     let modoOrcamento = false;
-    // orcamento[id] = { quantidade: number }
+    // orcamento[id] = { quantidade: number, maxFaixa?: number }
     let orcamento = {};
     // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
 
-    // Tecidos por faixa (carregados de tecidos.json) e configuração por partes
+    // Tecidos por faixa (carregados de tecidos.json)
+    let tecidosPorFaixa = {};
+
+    // Configuração de partes (encosto, costas, assento, observações) por código de produto
     // Estrutura em localStorage (starmobile_partes_tecidos):
     // {
     //   "CODIGO": {
@@ -487,8 +490,6 @@
     //   },
     //   ...
     // }
-    let tecidosPorFaixa = {};
-
     function getPartesConfig() {
       const key = "starmobile_partes_tecidos";
       try {
@@ -506,6 +507,18 @@
       } catch (e) {
         console.error("Erro ao salvar configuração de tecidos:", e);
       }
+    }
+
+    // Obtém o limite máximo de faixa a partir do texto digitado na busca (FAIXA 1..4).
+    // Se não encontrar nenhuma faixa, consideramos que pode usar até FAIXA 4.
+    function obterMaxFaixaDaBusca() {
+      const termo = (campoBusca.value || "").toUpperCase();
+      const match = termo.match(/FAIXA\s*([1-4])/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (!isNaN(n) && n >= 1 && n <= 4) return n;
+      }
+      return 4;
     }
 
     function onFaixaParteChange(codigo, parte, faixa) {
@@ -994,7 +1007,7 @@
       const ids = Object.keys(orcamento);
       if (!modoOrcamento) return "";
       if (ids.length === 0) {
-        return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
+        return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class=\"preco-sec\">Nenhum item incluído ainda. Marque \"Incluir no orçamento\" nos produtos desejados.</div></div>`;
       }
 
       let total = 0;
@@ -1013,6 +1026,7 @@
 
         const desc = p.chaves || "";
         const tipoTexto = (p.chaves || "").toUpperCase();
+        const maxFaixa = item.maxFaixa && item.maxFaixa >= 1 && item.maxFaixa <= 4 ? item.maxFaixa : 4;
 
         linhas += `<div class="orcamento-linha">
           <div class="orcamento-desc">
@@ -1036,14 +1050,13 @@
           const assento = cfgItem.assento || {};
           const obs     = cfgItem.observacoes || "";
 
-          const faixas = ["FAIXA 1", "FAIXA 2", "FAIXA 3", "FAIXA 4"];
-
-          function montarOpcoesFaixa(selecionada) {
+          function montarOpcoesFaixa(selecionada, maxFaixaNum) {
             let opts = '<option value="">Selecione a faixa...</option>';
-            faixas.forEach(fx => {
-              const sel = selecionada === fx ? "selected" : "";
-              opts += `<option value="${fx}" ${sel}>${fx}</option>`;
-            });
+            for (let n = 1; n <= maxFaixaNum; n++) {
+              const label = `FAIXA ${n}`;
+              const sel = selecionada === label ? "selected" : "";
+              opts += `<option value="${label}" ${sel}>${label}</option>`;
+            }
             return opts;
           }
 
@@ -1064,7 +1077,7 @@
               <strong>Encosto:</strong>
               <select class="faixa-encosto" data-codigo="${p.codigo}"
                       onchange="onFaixaParteChange('${p.codigo}', 'encosto', this.value)">
-                ${montarOpcoesFaixa(encosto.faixa || "")}
+                ${montarOpcoesFaixa(encosto.faixa || "", maxFaixa)}
               </select>
               <select class="tecido-encosto" data-codigo="${p.codigo}"
                       onchange="onTecidoParteChange('${p.codigo}', 'encosto', this.value)">
@@ -1079,7 +1092,7 @@
               <strong>Costas:</strong>
               <select class="faixa-costas" data-codigo="${p.codigo}"
                       onchange="onFaixaParteChange('${p.codigo}', 'costas', this.value)">
-                ${montarOpcoesFaixa(costas.faixa || "")}
+                ${montarOpcoesFaixa(costas.faixa || "", maxFaixa)}
               </select>
               <select class="tecido-costas" data-codigo="${p.codigo}"
                       onchange="onTecidoParteChange('${p.codigo}', 'costas', this.value)">
@@ -1094,7 +1107,7 @@
               <strong>Assento:</strong>
               <select class="faixa-assento" data-codigo="${p.codigo}"
                       onchange="onFaixaParteChange('${p.codigo}', 'assento', this.value)">
-                ${montarOpcoesFaixa(assento.faixa || "")}
+                ${montarOpcoesFaixa(assento.faixa || "", maxFaixa)}
               </select>
               <select class="tecido-assento" data-codigo="${p.codigo}"
                       onchange="onTecidoParteChange('${p.codigo}', 'assento', this.value)">
@@ -1278,7 +1291,8 @@ function gerarTextoOrcamento(fatores) {
           const qtdInput = resultadoDiv.querySelector(`.input-qtd-orcamento[data-id="${id}"]`);
           let qtd = parseInt(qtdInput ? qtdInput.value : "1", 10);
           if (isNaN(qtd) || qtd < 1) qtd = 1;
-          orcamento[id] = { quantidade: qtd };
+          const maxFaixa = obterMaxFaixaDaBusca();
+          orcamento[id] = { quantidade: qtd, maxFaixa };
         } else {
           delete orcamento[id];
         }
@@ -1299,7 +1313,8 @@ function gerarTextoOrcamento(fatores) {
         if (orcamento[id]) {
           orcamento[id].quantidade = qtd;
         } else {
-          orcamento[id] = { quantidade: qtd };
+          const maxFaixa = obterMaxFaixaDaBusca();
+          orcamento[id] = { quantidade: qtd, maxFaixa };
           const chk = resultadoDiv.querySelector(`.chk-orcamento[data-id="${id}"]`);
           if (chk) chk.checked = true;
         }
