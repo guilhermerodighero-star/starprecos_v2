@@ -240,8 +240,8 @@
       white-space: nowrap;
     }
     .orcamento-thumb {
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       border-radius: 6px;
       border: 1px solid #eee;
       object-fit: cover;
@@ -479,13 +479,12 @@
     // Tecidos por faixa (carregados de tecidos.json)
     let tecidosPorFaixa = {};
 
-    // Configuração de partes (encosto, costas, assento, observações) por código de produto
+    // Configuração de partes (frente/costas + observações) por código de produto
     // Estrutura em localStorage (starmobile_partes_tecidos):
     // {
     //   "CODIGO": {
-    //     encosto: { faixa: "FAIXA 1", tecido: "ABC123" },
-    //     costas:  { faixa: "FAIXA 2", tecido: "DEF456" },
-    //     assento: { faixa: "FAIXA 3", tecido: "GHI789" },
+    //     frente: { faixa: "FAIXA 1", tecido: "ABC123" },
+    //     costas: { faixa: "FAIXA 2", tecido: "DEF456" },
     //     observacoes: "texto livre"
     //   },
     //   ...
@@ -1007,7 +1006,7 @@
       const ids = Object.keys(orcamento);
       if (!modoOrcamento) return "";
       if (ids.length === 0) {
-        return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class=\"preco-sec\">Nenhum item incluído ainda. Marque \"Incluir no orçamento\" nos produtos desejados.</div></div>`;
+        return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
       }
 
       let total = 0;
@@ -1038,17 +1037,16 @@
           </div>
         </div>`;
 
-        // Para cadeiras, banquetas e poltronas, exibir blocos de configuração
+        // Para cadeiras, banquetas e poltronas, exibir blocos de configuração de tecidos
         if (
           tipoTexto.includes("CADEIRA") ||
           tipoTexto.includes("BANQUETA") ||
           tipoTexto.includes("POLTRONA")
         ) {
           const cfgItem = partesConfig[p.codigo] || {};
-          const encosto = cfgItem.encosto || {};
-          const costas  = cfgItem.costas  || {};
-          const assento = cfgItem.assento || {};
-          const obs     = cfgItem.observacoes || "";
+          const frente = cfgItem.frente || {};
+          const costas = cfgItem.costas || {};
+          const obs    = cfgItem.observacoes || "";
 
           function montarOpcoesFaixa(selecionada, maxFaixaNum) {
             let opts = '<option value="">Selecione a faixa...</option>';
@@ -1071,17 +1069,17 @@
             return opts;
           }
 
-          // ENCOSTO
+          // FRENTE (encosto/assento)
           linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
             <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <strong>Encosto:</strong>
-              <select class="faixa-encosto" data-codigo="${p.codigo}"
-                      onchange="onFaixaParteChange('${p.codigo}', 'encosto', this.value)">
-                ${montarOpcoesFaixa(encosto.faixa || "", maxFaixa)}
+              <strong>Frente (encosto/assento):</strong>
+              <select class="faixa-frente" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'frente', this.value)">
+                ${montarOpcoesFaixa(frente.faixa || "", maxFaixa)}
               </select>
-              <select class="tecido-encosto" data-codigo="${p.codigo}"
-                      onchange="onTecidoParteChange('${p.codigo}', 'encosto', this.value)">
-                ${montarOpcoesTecido(encosto.faixa || "", encosto.tecido || "")}
+              <select class="tecido-frente" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'frente', this.value)">
+                ${montarOpcoesTecido(frente.faixa || "", frente.tecido || "")}
               </select>
             </div>
           </div>`;
@@ -1097,21 +1095,6 @@
               <select class="tecido-costas" data-codigo="${p.codigo}"
                       onchange="onTecidoParteChange('${p.codigo}', 'costas', this.value)">
                 ${montarOpcoesTecido(costas.faixa || "", costas.tecido || "")}
-              </select>
-            </div>
-          </div>`;
-
-          // ASSENTO
-          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <strong>Assento:</strong>
-              <select class="faixa-assento" data-codigo="${p.codigo}"
-                      onchange="onFaixaParteChange('${p.codigo}', 'assento', this.value)">
-                ${montarOpcoesFaixa(assento.faixa || "", maxFaixa)}
-              </select>
-              <select class="tecido-assento" data-codigo="${p.codigo}"
-                      onchange="onTecidoParteChange('${p.codigo}', 'assento', this.value)">
-                ${montarOpcoesTecido(assento.faixa || "", assento.tecido || "")}
               </select>
             </div>
           </div>`;
@@ -1330,6 +1313,12 @@ function gerarTextoOrcamento(fatores) {
 
       if (target.id === "btnLimparOrcamento") {
         orcamento = {};
+        // Limpa também as configurações de tecidos por partes
+        try {
+          localStorage.removeItem("starmobile_partes_tecidos");
+        } catch (e) {
+          console.error("Erro ao limpar configuração de tecidos:", e);
+        }
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
         } else {
