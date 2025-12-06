@@ -257,6 +257,13 @@
       font-weight: 700;
       text-align: right;
     }
+    .btn-remover-orcamento {
+      border-color: #b3261e;
+      color: #b3261e;
+      background: #fff7f6;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
     footer {
       font-size: 11px;
       color: #777;
@@ -513,6 +520,14 @@
         localStorage.setItem(key, JSON.stringify(cfg || {}));
       } catch (e) {
         console.error("Erro ao salvar configuração de tecidos/acabamentos:", e);
+      }
+    }
+
+    function removerConfiguracaoDoProduto(codigo) {
+      const cfg = getPartesConfig();
+      if (cfg && cfg[codigo]) {
+        delete cfg[codigo];
+        savePartesConfig(cfg);
       }
     }
 
@@ -1094,6 +1109,7 @@ const campoBusca = document.getElementById("campoBusca");
                 <input type="number" min="1" value="${qtd}" class="input-qtd-orcamento" data-id="${id}">
               </label>
               <span class="orcamento-subtotal" data-id="${id}">Subtotal: R$ ${formatarPreco(subtotal)}</span>
+              ${emOrc ? `<button type="button" class="btn-remover-orcamento" data-id="${id}">🗑️ Remover</button>` : ""}
             </div>`;
           }
         } else {
@@ -1150,6 +1166,7 @@ const campoBusca = document.getElementById("campoBusca");
           <div class="orcamento-valores">
             R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
           </div>
+          <button type="button" class="btn-remover-orcamento" data-id="${id}">🗑️ Remover</button>
         </div>`;
 
         // Para cadeiras, banquetas e poltronas, exibir blocos de configuração de tecidos/acabamentos
@@ -1533,6 +1550,22 @@ function gerarTextoOrcamento(fatores) {
     resultadoDiv.addEventListener("click", (event) => {
       const target = event.target;
       if (!modoOrcamento) return;
+
+      if (target.classList.contains("btn-remover-orcamento")) {
+        const id = target.getAttribute("data-id");
+        delete orcamento[id];
+        const produto = produtos.find(pp => String(pp._id) === String(id));
+        if (produto && produto.codigo) {
+          removerConfiguracaoDoProduto(produto.codigo);
+        }
+
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
+        return;
+      }
 
       if (target.id === "btnLimparOrcamento") {
         orcamento = {};
