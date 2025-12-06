@@ -516,16 +516,26 @@
       }
     }
 
-    // Obtém o limite máximo de faixa a partir do texto digitado na busca (FAIXA 1..4).
-    // Se não encontrar nenhuma faixa, consideramos que pode usar até FAIXA 4.
-    function obterMaxFaixaDaBusca() {
-      const termo = (campoBusca.value || "").toUpperCase();
-      const match = termo.match(/FAIXA\s*([1-4])/);
+    function extrairConfiguracaoDoProduto(produto) {
+      const textoBase = (
+        (produto.chaves || "") + " " +
+        (Array.isArray(produto._campos) ? produto._campos.join(" ") : "")
+      ).toUpperCase();
+
+      // FAIXA
+      let maxFaixa = 4;
+      const match = textoBase.match(/FAIXA\s*([1-4])/);
       if (match) {
         const n = parseInt(match[1], 10);
-        if (!isNaN(n) && n >= 1 && n <= 4) return n;
+        if (!isNaN(n) && n >= 1 && n <= 4) {
+          maxFaixa = n;
+        }
       }
-      return 4;
+
+      const temTela = textoBase.includes("COM TELA");
+      const temVerniz = textoBase.includes("VERNIZ");
+
+      return { maxFaixa, temTela, temVerniz };
     }
 
     function onFaixaParteChange(codigo, parte, faixa) {
@@ -616,8 +626,7 @@
         if (checked) sel.value = "";
       }
     }
-
-    const campoBusca = document.getElementById("campoBusca");
+const campoBusca = document.getElementById("campoBusca");
     const statusSpan = document.getElementById("status");
     const resultadoDiv = document.getElementById("resultado");
     const btnFalar = document.getElementById("btnFalar");
@@ -877,6 +886,7 @@
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
+
     // Carrega tecidos.json
     fetch("tecidos.json")
       .then(res => {
@@ -932,7 +942,6 @@
       .catch(err => {
         console.error("Erro ao carregar verniz.json:", err);
       });
-
 
     if (localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
       isAdmin = true;
@@ -1259,7 +1268,7 @@
             </div>
           </div>`;
 
-          // COR DA TELA – aparece só se na busca tiver "COM TELA"
+          // COR DA TELA – aparece só se no produto tiver "COM TELA"
           if (temTela) {
             linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
               <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
@@ -1272,7 +1281,7 @@
             </div>`;
           }
 
-          // VERNIZ – aparece só se na busca tiver "VERNIZ"
+          // VERNIZ – aparece só se no produto tiver "VERNIZ"
           if (temVerniz) {
             linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
               <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
@@ -1461,18 +1470,26 @@ function gerarTextoOrcamento(fatores) {
           let qtd = parseInt(qtdInput ? qtdInput.value : "1", 10);
           if (isNaN(qtd) || qtd < 1) qtd = 1;
 
-          const termo = (campoBusca.value || "").toUpperCase();
-          const maxFaixa = obterMaxFaixaDaBusca();
-          const temTela = termo.includes("COM TELA");
-          const temVerniz = termo.includes("VERNIZ");
+          let cfgProd = { maxFaixa: 4, temTela: false, temVerniz: false };
+          if (p) {
+            cfgProd = extrairConfiguracaoDoProduto(p);
+          }
 
-          orcamento[id] = { quantidade: qtd, maxFaixa, temTela, temVerniz };
+          orcamento[id] = {
+            quantidade: qtd,
+            maxFaixa: cfgProd.maxFaixa,
+            temTela: cfgProd.temTela,
+            temVerniz: cfgProd.temVerniz
+          };
         } else {
           delete orcamento[id];
         }
 
-        if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
-        else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
       }
 
       // Quantidade
@@ -1487,18 +1504,29 @@ function gerarTextoOrcamento(fatores) {
         if (orcamento[id]) {
           orcamento[id].quantidade = qtd;
         } else {
-          const termo = (campoBusca.value || "").toUpperCase();
-          const maxFaixa = obterMaxFaixaDaBusca();
-          const temTela = termo.includes("COM TELA");
-          const temVerniz = termo.includes("VERNIZ");
+          const p = produtos.find(pp => String(pp._id) === String(id));
 
-          orcamento[id] = { quantidade: qtd, maxFaixa, temTela, temVerniz };
+          let cfgProd = { maxFaixa: 4, temTela: false, temVerniz: false };
+          if (p) {
+            cfgProd = extrairConfiguracaoDoProduto(p);
+          }
+
+          orcamento[id] = {
+            quantidade: qtd,
+            maxFaixa: cfgProd.maxFaixa,
+            temTela: cfgProd.temTela,
+            temVerniz: cfgProd.temVerniz
+          };
+
           const chk = resultadoDiv.querySelector(`.chk-orcamento[data-id="${id}"]`);
           if (chk) chk.checked = true;
         }
 
-        if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
-        else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
       }
     });
 
