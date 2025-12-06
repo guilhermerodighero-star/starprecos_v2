@@ -250,6 +250,20 @@
     .orcamento-valores {
       white-space: nowrap;
       font-weight: 500;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn-remover-item {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+      background: #ffecec;
+      cursor: pointer;
+    }
+    .btn-remover-item:hover {
+      background: #ffd0d0;
     }
     .orcamento-total {
       margin-top: 8px;
@@ -471,162 +485,12 @@
     let frasesUnicas = [];
     let isAdmin = false;
     let modoOrcamento = false;
-    // orcamento[id] = { quantidade: number, maxFaixa?: number, temTela?: boolean, temVerniz?: boolean }
+    // orcamento[id] = { quantidade: number }
     let orcamento = {};
     // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
 
-    // Tecidos por faixa (carregados de tecidos.json)
-    let tecidosPorFaixa = {};
-    // Listas auxiliares de opções
-    let coresOpcoes = [];
-    let telaOpcoes = [];
-    let vernizOpcoes = [];
-
-    // Configuração de partes (frente/costas + acabamentos + observações) por código de produto
-    // Estrutura em localStorage (starmobile_partes_tecidos):
-    // {
-    //   "CODIGO": {
-    //     frente: { faixa: "FAIXA 1", tecido: "ABC123" },
-    //     costas: { faixa: "FAIXA 2", tecido: "DEF456" },
-    //     corEstrutura: { valor: "COR_X", naoSeAplica: true/false },
-    //     corMadeira: { valor: "COR_Y", naoSeAplica: true/false },
-    //     corTela: { valor: "TELA_X" },
-    //     verniz: { valor: "VERNIZ_X" },
-    //     observacoes: "texto livre"
-    //   },
-    //   ...
-    // }
-    function getPartesConfig() {
-      const key = "starmobile_partes_tecidos";
-      try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) || {} : {};
-      } catch (e) {
-        return {};
-      }
-    }
-
-    function savePartesConfig(cfg) {
-      const key = "starmobile_partes_tecidos";
-      try {
-        localStorage.setItem(key, JSON.stringify(cfg || {}));
-      } catch (e) {
-        console.error("Erro ao salvar configuração de tecidos/acabamentos:", e);
-      }
-    }
-
-    function extrairConfiguracaoDoProduto(produto) {
-      const textoBase = (
-        (produto.chaves || "") + " " +
-        (Array.isArray(produto._campos) ? produto._campos.join(" ") : "")
-      ).toUpperCase();
-
-      // FAIXA
-      let maxFaixa = 4;
-      const match = textoBase.match(/FAIXA\s*([1-4])/);
-      if (match) {
-        const n = parseInt(match[1], 10);
-        if (!isNaN(n) && n >= 1 && n <= 4) {
-          maxFaixa = n;
-        }
-      }
-
-      const temTela = textoBase.includes("COM TELA");
-      const temVerniz = textoBase.includes("VERNIZ");
-
-      return { maxFaixa, temTela, temVerniz };
-    }
-
-    function onFaixaParteChange(codigo, parte, faixa) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
-      cfg[codigo][parte].faixa = faixa || "";
-      cfg[codigo][parte].tecido = "";
-      savePartesConfig(cfg);
-
-      const selectTecido = document.querySelector(
-        `select.tecido-${parte}[data-codigo="${codigo}"]`
-      );
-      if (selectTecido) {
-        let opts = '<option value="">Selecione o tecido...</option>';
-        if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
-          tecidosPorFaixa[faixa].forEach(t => {
-            opts += `<option value="${t}">${t}</option>`;
-          });
-        }
-        selectTecido.innerHTML = opts;
-      }
-    }
-
-    function onTecidoParteChange(codigo, parte, tecido) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
-      cfg[codigo][parte].tecido = tecido || "";
-      savePartesConfig(cfg);
-    }
-
-    function onObsParteChange(codigo, obs) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      cfg[codigo].observacoes = obs || "";
-      savePartesConfig(cfg);
-    }
-
-    function onCorEstruturaChange(codigo, valor) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo].corEstrutura) cfg[codigo].corEstrutura = {};
-      cfg[codigo].corEstrutura.valor = valor || "";
-      savePartesConfig(cfg);
-    }
-
-    function onCorMadeiraChange(codigo, valor) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo].corMadeira) cfg[codigo].corMadeira = {};
-      cfg[codigo].corMadeira.valor = valor || "";
-      savePartesConfig(cfg);
-    }
-
-    function onCorTelaChange(codigo, valor) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo].corTela) cfg[codigo].corTela = {};
-      cfg[codigo].corTela.valor = valor || "";
-      savePartesConfig(cfg);
-    }
-
-    function onVernizChange(codigo, valor) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo].verniz) cfg[codigo].verniz = {};
-      cfg[codigo].verniz.valor = valor || "";
-      savePartesConfig(cfg);
-    }
-
-    function onNaoSeAplicaChange(codigo, campo, checked) {
-      const cfg = getPartesConfig();
-      if (!cfg[codigo]) cfg[codigo] = {};
-      if (!cfg[codigo][campo]) cfg[codigo][campo] = {};
-      cfg[codigo][campo].naoSeAplica = !!checked;
-      if (checked) {
-        cfg[codigo][campo].valor = "";
-      }
-      savePartesConfig(cfg);
-      // desabilita/habilita o select correspondente
-      const seletor = campo === "corEstrutura"
-        ? 'select.cor-estrutura'
-        : 'select.cor-madeira';
-      const sel = document.querySelector(`${seletor}[data-codigo="${codigo}"]`);
-      if (sel) {
-        sel.disabled = !!checked;
-        if (checked) sel.value = "";
-      }
-    }
-const campoBusca = document.getElementById("campoBusca");
+    const campoBusca = document.getElementById("campoBusca");
     const statusSpan = document.getElementById("status");
     const resultadoDiv = document.getElementById("resultado");
     const btnFalar = document.getElementById("btnFalar");
@@ -664,7 +528,95 @@ const campoBusca = document.getElementById("campoBusca");
     const STORAGE_KEY_MARKUP = "starmobile_markup_percent";
     const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
 
-    const SENHA_GERENTE = "STAR2025";
+    
+    const STORAGE_KEY_ORCAMENTOS_SALVOS = "starmobile_orcamentos_salvos";
+
+    function getOrcamentosSalvos() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_ORCAMENTOS_SALVOS);
+        return raw ? JSON.parse(raw) || [] : [];
+      } catch (e) {
+        console.error("Erro ao ler orçamentos salvos:", e);
+        return [];
+      }
+    }
+
+    function salvarListaOrcamentosSalvos(lista) {
+      try {
+        localStorage.setItem(STORAGE_KEY_ORCAMENTOS_SALVOS, JSON.stringify(lista || []));
+      } catch (e) {
+        console.error("Erro ao salvar orçamentos salvos:", e);
+      }
+    }
+
+    function gerarProximoNumeroOrcamento(lista) {
+      let max = 0;
+      (lista || []).forEach(o => {
+        const n = parseInt(o.id, 10);
+        if (!isNaN(n) && n > max) max = n;
+      });
+      const next = max + 1;
+      return String(next).padStart(4, "0");
+    }
+
+    function salvarOrcamentoAtual() {
+      const ids = Object.keys(orcamento);
+      if (ids.length === 0) {
+        alert("Não há itens no orçamento para salvar.");
+        return;
+      }
+
+      const cliente = orcClienteInput.value.trim();
+      const telefone = orcTelefoneInput.value.trim();
+      const vendedor = orcVendedorInput.value.trim();
+      const validade = orcValidadeInput.value.trim() || "7 dias";
+
+      if (!cliente || !telefone || !vendedor) {
+        alert("Para salvar o orçamento é obrigatório preencher Cliente, Telefone e Consultor.");
+        return;
+      }
+
+      const lista = getOrcamentosSalvos();
+      const novoId = gerarProximoNumeroOrcamento(lista);
+
+      const registro = {
+        id: novoId,
+        criadoEm: new Date().toISOString(),
+        cliente,
+        telefone,
+        vendedor,
+        validade,
+        orcamento: { ...orcamento }
+      };
+
+      lista.push(registro);
+      salvarListaOrcamentosSalvos(lista);
+      statusSpan.textContent = `Orçamento ${novoId} salvo com sucesso.`;
+    }
+
+    function carregarOrcamentoSalvo(idOrc) {
+      if (!idOrc) return;
+      const lista = getOrcamentosSalvos();
+      const reg = lista.find(o => o.id === idOrc);
+      if (!reg) {
+        alert("Orçamento não encontrado.");
+        return;
+      }
+
+      orcClienteInput.value = reg.cliente || "";
+      orcTelefoneInput.value = reg.telefone || "";
+      orcVendedorInput.value = reg.vendedor || "";
+      orcValidadeInput.value = reg.validade || "7 dias";
+
+      orcamento = reg.orcamento || {};
+
+      // Garante que o modo orçamento esteja ativo
+      modoOrcamento = true;
+      aplicarModoOrcamentoUI();
+      statusSpan.textContent = `Orçamento ${reg.id} carregado.`;
+    }
+
+const SENHA_GERENTE = "STAR2025";
 
     // Modal imagem
     const imageModal = document.getElementById("imageModal");
@@ -886,63 +838,6 @@ const campoBusca = document.getElementById("campoBusca");
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
-
-    // Carrega tecidos.json
-    fetch("tecidos.json")
-      .then(res => {
-        if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
-        return res.json();
-      })
-      .then(data => {
-        tecidosPorFaixa = data || {};
-        console.log("Tecidos carregados:", tecidosPorFaixa);
-      })
-      .catch(err => {
-        console.error("Erro ao carregar tecidos.json:", err);
-      });
-
-    // Carrega cores.json
-    fetch("cores.json")
-      .then(res => {
-        if (!res.ok) throw new Error("Erro HTTP cores: " + res.status);
-        return res.json();
-      })
-      .then(data => {
-        coresOpcoes = Array.isArray(data) ? data : [];
-        console.log("Cores carregadas:", coresOpcoes);
-      })
-      .catch(err => {
-        console.error("Erro ao carregar cores.json:", err);
-      });
-
-    // Carrega tela.json
-    fetch("tela.json")
-      .then(res => {
-        if (!res.ok) throw new Error("Erro HTTP tela: " + res.status);
-        return res.json();
-      })
-      .then(data => {
-        telaOpcoes = Array.isArray(data) ? data : [];
-        console.log("Telas carregadas:", telaOpcoes);
-      })
-      .catch(err => {
-        console.error("Erro ao carregar tela.json:", err);
-      });
-
-    // Carrega verniz.json
-    fetch("verniz.json")
-      .then(res => {
-        if (!res.ok) throw new Error("Erro HTTP verniz: " + res.status);
-        return res.json();
-      })
-      .then(data => {
-        vernizOpcoes = Array.isArray(data) ? data : [];
-        console.log("Vernizes carregados:", vernizOpcoes);
-      })
-      .catch(err => {
-        console.error("Erro ao carregar verniz.json:", err);
-      });
-
     if (localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
       isAdmin = true;
     }
@@ -1122,10 +1017,11 @@ const campoBusca = document.getElementById("campoBusca");
         return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
       }
 
+      // Carrega orçamentos salvos para montar a lista
+      const salvos = getOrcamentosSalvos();
+
       let total = 0;
       let linhas = "";
-
-      const partesConfig = getPartesConfig();
 
       ids.forEach(id => {
         const item = orcamento[id];
@@ -1137,10 +1033,6 @@ const campoBusca = document.getElementById("campoBusca");
         total += subtotal;
 
         const desc = p.chaves || "";
-        const tipoTexto = (p.chaves || "").toUpperCase();
-        const maxFaixa = item.maxFaixa && item.maxFaixa >= 1 && item.maxFaixa <= 4 ? item.maxFaixa : 4;
-        const temTela = !!item.temTela;
-        const temVerniz = !!item.temVerniz;
 
         linhas += `<div class="orcamento-linha">
           <div class="orcamento-desc">
@@ -1148,162 +1040,17 @@ const campoBusca = document.getElementById("campoBusca");
             <span>${p.codigo} – ${desc}</span>
           </div>
           <div class="orcamento-valores">
-            R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
+            <span>R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}</span>
+            <button type="button" class="btn-remover-item" data-id="${id}">Remover</button>
           </div>
         </div>`;
+      });
 
-        // Para cadeiras, banquetas e poltronas, exibir blocos de configuração de tecidos/acabamentos
-        if (
-          tipoTexto.includes("CADEIRA") ||
-          tipoTexto.includes("BANQUETA") ||
-          tipoTexto.includes("POLTRONA")
-        ) {
-          const cfgItem = partesConfig[p.codigo] || {};
-          const frente = cfgItem.frente || {};
-          const costas = cfgItem.costas || {};
-          const corEstrutura = cfgItem.corEstrutura || {};
-          const corMadeira = cfgItem.corMadeira || {};
-          const corTela = cfgItem.corTela || {};
-          const verniz = cfgItem.verniz || {};
-          const obs = cfgItem.observacoes || "";
-
-          function montarOpcoesFaixa(selecionada, maxFaixaNum) {
-            let opts = '<option value="">Selecione a faixa...</option>';
-            for (let n = 1; n <= maxFaixaNum; n++) {
-              const label = `FAIXA ${n}`;
-              const sel = selecionada === label ? "selected" : "";
-              opts += `<option value="${label}" ${sel}>${label}</option>`;
-            }
-            return opts;
-          }
-
-          function montarOpcoesTecido(faixa, selecionado) {
-            let opts = '<option value="">Selecione o tecido...</option>';
-            if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
-              tecidosPorFaixa[faixa].forEach(t => {
-                const sel = selecionado === t ? "selected" : "";
-                opts += `<option value="${t}" ${sel}>${t}</option>`;
-              });
-            }
-            return opts;
-          }
-
-          function montarOpcoesGenericas(lista, selecionado, labelPadrao) {
-            let opts = `<option value="">${labelPadrao}</option>`;
-            if (Array.isArray(lista)) {
-              lista.forEach(v => {
-                const sel = selecionado === v ? "selected" : "";
-                opts += `<option value="${v}" ${sel}>${v}</option>`;
-              });
-            }
-            return opts;
-          }
-
-          const naoAplicaEstrutura = !!corEstrutura.naoSeAplica;
-          const naoAplicaMadeira = !!corMadeira.naoSeAplica;
-
-          // FRENTE (encosto/assento)
-          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <strong>Frente (encosto/assento):</strong>
-              <select class="faixa-frente" data-codigo="${p.codigo}"
-                      onchange="onFaixaParteChange('${p.codigo}', 'frente', this.value)">
-                ${montarOpcoesFaixa(frente.faixa || "", maxFaixa)}
-              </select>
-              <select class="tecido-frente" data-codigo="${p.codigo}"
-                      onchange="onTecidoParteChange('${p.codigo}', 'frente', this.value)">
-                ${montarOpcoesTecido(frente.faixa || "", frente.tecido || "")}
-              </select>
-            </div>
-          </div>`;
-
-          // COSTAS
-          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <strong>Costas:</strong>
-              <select class="faixa-costas" data-codigo="${p.codigo}"
-                      onchange="onFaixaParteChange('${p.codigo}', 'costas', this.value)">
-                ${montarOpcoesFaixa(costas.faixa || "", maxFaixa)}
-              </select>
-              <select class="tecido-costas" data-codigo="${p.codigo}"
-                      onchange="onTecidoParteChange('${p.codigo}', 'costas', this.value)">
-                ${montarOpcoesTecido(costas.faixa || "", costas.tecido || "")}
-              </select>
-            </div>
-          </div>`;
-
-          // COR DA ESTRUTURA – lista Cores + flag Não se aplica
-          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <strong>Cor da Estrutura:</strong>
-              <select class="cor-estrutura" data-codigo="${p.codigo}"
-                      onchange="onCorEstruturaChange('${p.codigo}', this.value)"
-                      ${naoAplicaEstrutura ? "disabled" : ""}>
-                ${montarOpcoesGenericas(coresOpcoes, corEstrutura.valor || "", "Selecione a cor...")}
-              </select>
-              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
-                <input type="checkbox" class="chk-cor-estrutura-nao-aplica" data-codigo="${p.codigo}"
-                       onchange="onNaoSeAplicaChange('${p.codigo}', 'corEstrutura', this.checked)"
-                       ${naoAplicaEstrutura ? "checked" : ""}>
-                Não se aplica
-              </label>
-            </div>
-          </div>`;
-
-          // COR DA MADEIRA – lista Cores + flag Não se aplica
-          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <strong>Cor da Madeira:</strong>
-              <select class="cor-madeira" data-codigo="${p.codigo}"
-                      onchange="onCorMadeiraChange('${p.codigo}', this.value)"
-                      ${naoAplicaMadeira ? "disabled" : ""}>
-                ${montarOpcoesGenericas(coresOpcoes, corMadeira.valor || "", "Selecione a cor...")}
-              </select>
-              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
-                <input type="checkbox" class="chk-cor-madeira-nao-aplica" data-codigo="${p.codigo}"
-                       onchange="onNaoSeAplicaChange('${p.codigo}', 'corMadeira', this.checked)"
-                       ${naoAplicaMadeira ? "checked" : ""}>
-                Não se aplica
-              </label>
-            </div>
-          </div>`;
-
-          // COR DA TELA – aparece só se no produto tiver "COM TELA"
-          if (temTela) {
-            linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-              <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-                <strong>Cor da Tela:</strong>
-                <select class="cor-tela" data-codigo="${p.codigo}"
-                        onchange="onCorTelaChange('${p.codigo}', this.value)">
-                  ${montarOpcoesGenericas(telaOpcoes, corTela.valor || "", "Selecione a tela...")}
-                </select>
-              </div>
-            </div>`;
-          }
-
-          // VERNIZ – aparece só se no produto tiver "VERNIZ"
-          if (temVerniz) {
-            linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-              <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
-                <strong>Verniz:</strong>
-                <select class="verniz" data-codigo="${p.codigo}"
-                        onchange="onVernizChange('${p.codigo}', this.value)">
-                  ${montarOpcoesGenericas(vernizOpcoes, verniz.valor || "", "Selecione o verniz...")}
-                </select>
-              </div>
-            </div>`;
-          }
-
-          // OBSERVAÇÕES
-          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
-            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: flex-start; flex-direction: column;">
-              <strong>Observações:</strong>
-              <textarea class="obs-partes" data-codigo="${p.codigo}" rows="2"
-                        oninput="onObsParteChange('${p.codigo}', this.value)"
-                        style="width: 100%; max-width: 520px; font-size: 12px; padding: 4px 6px; border-radius: 4px; border: 1px solid #ccc; resize: vertical;">${obs}</textarea>
-            </div>
-          </div>`;
-        }
+      // Monta opções da lista de orçamentos salvos
+      let opcoesSalvos = '<option value="">Orçamentos salvos...</option>';
+      salvos.forEach(o => {
+        const labelCliente = o.cliente && o.cliente.trim() ? o.cliente.trim() : "Sem nome";
+        opcoesSalvos += `<option value="${o.id}">${o.id} - ${labelCliente}</option>`;
       });
 
       return `<div class="orcamento-panel">
@@ -1312,6 +1059,10 @@ const campoBusca = document.getElementById("campoBusca");
           <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
           <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
           <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
+          <button type="button" id="btnSalvarOrcamento">💾 Salvar orçamento</button>
+          <select id="selectOrcamentosSalvos">
+            ${opcoesSalvos}
+          </select>
         </div>
         ${linhas}
         <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
@@ -1460,6 +1211,15 @@ function gerarTextoOrcamento(fatores) {
       const target = event.target;
       if (!modoOrcamento) return;
 
+      // Seleção de orçamento salvo
+      if (target.id === "selectOrcamentosSalvos") {
+        const idSel = target.value;
+        if (idSel) {
+          carregarOrcamentoSalvo(idSel);
+        }
+        return;
+      }
+
       // Checkbox incluir no orçamento
       if (target.classList.contains("chk-orcamento")) {
         const id = target.getAttribute("data-id");
@@ -1469,79 +1229,23 @@ function gerarTextoOrcamento(fatores) {
           const qtdInput = resultadoDiv.querySelector(`.input-qtd-orcamento[data-id="${id}"]`);
           let qtd = parseInt(qtdInput ? qtdInput.value : "1", 10);
           if (isNaN(qtd) || qtd < 1) qtd = 1;
-
-          let cfgProd = { maxFaixa: 4, temTela: false, temVerniz: false };
-          if (p) {
-            cfgProd = extrairConfiguracaoDoProduto(p);
-          }
-
-          orcamento[id] = {
-            quantidade: qtd,
-            maxFaixa: cfgProd.maxFaixa,
-            temTela: cfgProd.temTela,
-            temVerniz: cfgProd.temVerniz
-          };
+          orcamento[id] = { quantidade: qtd };
         } else {
           delete orcamento[id];
         }
 
-        if (campoBusca.value.trim()) {
-          buscarProduto(campoBusca.value);
-        } else {
-          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
-        }
+        if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+        else resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
       }
 
       // Quantidade
-      if (target.classList.contains("input-qtd-orcamento")) {
-        const id = target.getAttribute("data-id");
-        let qtd = parseInt(target.value, 10);
-        if (isNaN(qtd) || qtd < 1) {
-          qtd = 1;
-          target.value = "1";
-        }
-
-        if (orcamento[id]) {
-          orcamento[id].quantidade = qtd;
-        } else {
-          const p = produtos.find(pp => String(pp._id) === String(id));
-
-          let cfgProd = { maxFaixa: 4, temTela: false, temVerniz: false };
-          if (p) {
-            cfgProd = extrairConfiguracaoDoProduto(p);
-          }
-
-          orcamento[id] = {
-            quantidade: qtd,
-            maxFaixa: cfgProd.maxFaixa,
-            temTela: cfgProd.temTela,
-            temVerniz: cfgProd.temVerniz
-          };
-
-          const chk = resultadoDiv.querySelector(`.chk-orcamento[data-id="${id}"]`);
-          if (chk) chk.checked = true;
-        }
-
-        if (campoBusca.value.trim()) {
-          buscarProduto(campoBusca.value);
-        } else {
-          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
-        }
-      }
-    });
-
+      if (target.classList.contains("input-qtd-orcamento")
     resultadoDiv.addEventListener("click", (event) => {
       const target = event.target;
       if (!modoOrcamento) return;
 
       if (target.id === "btnLimparOrcamento") {
         orcamento = {};
-        // Limpa também as configurações de tecidos e acabamentos
-        try {
-          localStorage.removeItem("starmobile_partes_tecidos");
-        } catch (e) {
-          console.error("Erro ao limpar configuração de tecidos/acabamentos:", e);
-        }
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
         } else {
@@ -1566,9 +1270,31 @@ function gerarTextoOrcamento(fatores) {
       if (target.id === "btnImprimirOrcamento") {
         window.print();
       }
+
+      if (target.id === "btnSalvarOrcamento") {
+        salvarOrcamentoAtual();
+        // Re-render para atualizar a lista de orçamentos salvos
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
+      }
+
+      if (target.classList.contains("btn-remover-item")) {
+        const id = target.getAttribute("data-id");
+        if (id && orcamento[id]) {
+          delete orcamento[id];
+          if (campoBusca.value.trim()) {
+            buscarProduto(campoBusca.value);
+          } else {
+            resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+          }
+        }
+      }
     });
 
-    // Voz
+// Voz
     let recognition = null;
 
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
