@@ -471,20 +471,28 @@
     let frasesUnicas = [];
     let isAdmin = false;
     let modoOrcamento = false;
-    // orcamento[id] = { quantidade: number, maxFaixa?: number }
+    // orcamento[id] = { quantidade: number, maxFaixa?: number, temTela?: boolean, temVerniz?: boolean }
     let orcamento = {};
     // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
 
     // Tecidos por faixa (carregados de tecidos.json)
     let tecidosPorFaixa = {};
+    // Listas auxiliares de opções
+    let coresOpcoes = [];
+    let telaOpcoes = [];
+    let vernizOpcoes = [];
 
-    // Configuração de partes (frente/costas + observações) por código de produto
+    // Configuração de partes (frente/costas + acabamentos + observações) por código de produto
     // Estrutura em localStorage (starmobile_partes_tecidos):
     // {
     //   "CODIGO": {
     //     frente: { faixa: "FAIXA 1", tecido: "ABC123" },
     //     costas: { faixa: "FAIXA 2", tecido: "DEF456" },
+    //     corEstrutura: { valor: "COR_X", naoSeAplica: true/false },
+    //     corMadeira: { valor: "COR_Y", naoSeAplica: true/false },
+    //     corTela: { valor: "TELA_X" },
+    //     verniz: { valor: "VERNIZ_X" },
     //     observacoes: "texto livre"
     //   },
     //   ...
@@ -504,7 +512,7 @@
       try {
         localStorage.setItem(key, JSON.stringify(cfg || {}));
       } catch (e) {
-        console.error("Erro ao salvar configuração de tecidos:", e);
+        console.error("Erro ao salvar configuração de tecidos/acabamentos:", e);
       }
     }
 
@@ -555,6 +563,58 @@
       if (!cfg[codigo]) cfg[codigo] = {};
       cfg[codigo].observacoes = obs || "";
       savePartesConfig(cfg);
+    }
+
+    function onCorEstruturaChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].corEstrutura) cfg[codigo].corEstrutura = {};
+      cfg[codigo].corEstrutura.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onCorMadeiraChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].corMadeira) cfg[codigo].corMadeira = {};
+      cfg[codigo].corMadeira.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onCorTelaChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].corTela) cfg[codigo].corTela = {};
+      cfg[codigo].corTela.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onVernizChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].verniz) cfg[codigo].verniz = {};
+      cfg[codigo].verniz.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onNaoSeAplicaChange(codigo, campo, checked) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][campo]) cfg[codigo][campo] = {};
+      cfg[codigo][campo].naoSeAplica = !!checked;
+      if (checked) {
+        cfg[codigo][campo].valor = "";
+      }
+      savePartesConfig(cfg);
+      // desabilita/habilita o select correspondente
+      const seletor = campo === "corEstrutura"
+        ? 'select.cor-estrutura'
+        : 'select.cor-madeira';
+      const sel = document.querySelector(`${seletor}[data-codigo="${codigo}"]`);
+      if (sel) {
+        sel.disabled = !!checked;
+        if (checked) sel.value = "";
+      }
     }
 
     const campoBusca = document.getElementById("campoBusca");
@@ -817,6 +877,7 @@
         statusSpan.textContent = "Erro ao carregar produtos.json";
       });
 
+    // Carrega tecidos.json
     fetch("tecidos.json")
       .then(res => {
         if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
@@ -829,6 +890,49 @@
       .catch(err => {
         console.error("Erro ao carregar tecidos.json:", err);
       });
+
+    // Carrega cores.json
+    fetch("cores.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP cores: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        coresOpcoes = Array.isArray(data) ? data : [];
+        console.log("Cores carregadas:", coresOpcoes);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar cores.json:", err);
+      });
+
+    // Carrega tela.json
+    fetch("tela.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP tela: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        telaOpcoes = Array.isArray(data) ? data : [];
+        console.log("Telas carregadas:", telaOpcoes);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar tela.json:", err);
+      });
+
+    // Carrega verniz.json
+    fetch("verniz.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP verniz: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        vernizOpcoes = Array.isArray(data) ? data : [];
+        console.log("Vernizes carregados:", vernizOpcoes);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar verniz.json:", err);
+      });
+
 
     if (localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
       isAdmin = true;
@@ -1026,6 +1130,8 @@
         const desc = p.chaves || "";
         const tipoTexto = (p.chaves || "").toUpperCase();
         const maxFaixa = item.maxFaixa && item.maxFaixa >= 1 && item.maxFaixa <= 4 ? item.maxFaixa : 4;
+        const temTela = !!item.temTela;
+        const temVerniz = !!item.temVerniz;
 
         linhas += `<div class="orcamento-linha">
           <div class="orcamento-desc">
@@ -1037,7 +1143,7 @@
           </div>
         </div>`;
 
-        // Para cadeiras, banquetas e poltronas, exibir blocos de configuração de tecidos
+        // Para cadeiras, banquetas e poltronas, exibir blocos de configuração de tecidos/acabamentos
         if (
           tipoTexto.includes("CADEIRA") ||
           tipoTexto.includes("BANQUETA") ||
@@ -1046,7 +1152,11 @@
           const cfgItem = partesConfig[p.codigo] || {};
           const frente = cfgItem.frente || {};
           const costas = cfgItem.costas || {};
-          const obs    = cfgItem.observacoes || "";
+          const corEstrutura = cfgItem.corEstrutura || {};
+          const corMadeira = cfgItem.corMadeira || {};
+          const corTela = cfgItem.corTela || {};
+          const verniz = cfgItem.verniz || {};
+          const obs = cfgItem.observacoes || "";
 
           function montarOpcoesFaixa(selecionada, maxFaixaNum) {
             let opts = '<option value="">Selecione a faixa...</option>';
@@ -1068,6 +1178,20 @@
             }
             return opts;
           }
+
+          function montarOpcoesGenericas(lista, selecionado, labelPadrao) {
+            let opts = `<option value="">${labelPadrao}</option>`;
+            if (Array.isArray(lista)) {
+              lista.forEach(v => {
+                const sel = selecionado === v ? "selected" : "";
+                opts += `<option value="${v}" ${sel}>${v}</option>`;
+              });
+            }
+            return opts;
+          }
+
+          const naoAplicaEstrutura = !!corEstrutura.naoSeAplica;
+          const naoAplicaMadeira = !!corMadeira.naoSeAplica;
 
           // FRENTE (encosto/assento)
           linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
@@ -1098,6 +1222,68 @@
               </select>
             </div>
           </div>`;
+
+          // COR DA ESTRUTURA – lista Cores + flag Não se aplica
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Cor da Estrutura:</strong>
+              <select class="cor-estrutura" data-codigo="${p.codigo}"
+                      onchange="onCorEstruturaChange('${p.codigo}', this.value)"
+                      ${naoAplicaEstrutura ? "disabled" : ""}>
+                ${montarOpcoesGenericas(coresOpcoes, corEstrutura.valor || "", "Selecione a cor...")}
+              </select>
+              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <input type="checkbox" class="chk-cor-estrutura-nao-aplica" data-codigo="${p.codigo}"
+                       onchange="onNaoSeAplicaChange('${p.codigo}', 'corEstrutura', this.checked)"
+                       ${naoAplicaEstrutura ? "checked" : ""}>
+                Não se aplica
+              </label>
+            </div>
+          </div>`;
+
+          // COR DA MADEIRA – lista Cores + flag Não se aplica
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Cor da Madeira:</strong>
+              <select class="cor-madeira" data-codigo="${p.codigo}"
+                      onchange="onCorMadeiraChange('${p.codigo}', this.value)"
+                      ${naoAplicaMadeira ? "disabled" : ""}>
+                ${montarOpcoesGenericas(coresOpcoes, corMadeira.valor || "", "Selecione a cor...")}
+              </select>
+              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <input type="checkbox" class="chk-cor-madeira-nao-aplica" data-codigo="${p.codigo}"
+                       onchange="onNaoSeAplicaChange('${p.codigo}', 'corMadeira', this.checked)"
+                       ${naoAplicaMadeira ? "checked" : ""}>
+                Não se aplica
+              </label>
+            </div>
+          </div>`;
+
+          // COR DA TELA – aparece só se na busca tiver "COM TELA"
+          if (temTela) {
+            linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+              <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <strong>Cor da Tela:</strong>
+                <select class="cor-tela" data-codigo="${p.codigo}"
+                        onchange="onCorTelaChange('${p.codigo}', this.value)">
+                  ${montarOpcoesGenericas(telaOpcoes, corTela.valor || "", "Selecione a tela...")}
+                </select>
+              </div>
+            </div>`;
+          }
+
+          // VERNIZ – aparece só se na busca tiver "VERNIZ"
+          if (temVerniz) {
+            linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+              <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <strong>Verniz:</strong>
+                <select class="verniz" data-codigo="${p.codigo}"
+                        onchange="onVernizChange('${p.codigo}', this.value)">
+                  ${montarOpcoesGenericas(vernizOpcoes, verniz.valor || "", "Selecione o verniz...")}
+                </select>
+              </div>
+            </div>`;
+          }
 
           // OBSERVAÇÕES
           linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
@@ -1274,8 +1460,13 @@ function gerarTextoOrcamento(fatores) {
           const qtdInput = resultadoDiv.querySelector(`.input-qtd-orcamento[data-id="${id}"]`);
           let qtd = parseInt(qtdInput ? qtdInput.value : "1", 10);
           if (isNaN(qtd) || qtd < 1) qtd = 1;
+
+          const termo = (campoBusca.value || "").toUpperCase();
           const maxFaixa = obterMaxFaixaDaBusca();
-          orcamento[id] = { quantidade: qtd, maxFaixa };
+          const temTela = termo.includes("COM TELA");
+          const temVerniz = termo.includes("VERNIZ");
+
+          orcamento[id] = { quantidade: qtd, maxFaixa, temTela, temVerniz };
         } else {
           delete orcamento[id];
         }
@@ -1296,8 +1487,12 @@ function gerarTextoOrcamento(fatores) {
         if (orcamento[id]) {
           orcamento[id].quantidade = qtd;
         } else {
+          const termo = (campoBusca.value || "").toUpperCase();
           const maxFaixa = obterMaxFaixaDaBusca();
-          orcamento[id] = { quantidade: qtd, maxFaixa };
+          const temTela = termo.includes("COM TELA");
+          const temVerniz = termo.includes("VERNIZ");
+
+          orcamento[id] = { quantidade: qtd, maxFaixa, temTela, temVerniz };
           const chk = resultadoDiv.querySelector(`.chk-orcamento[data-id="${id}"]`);
           if (chk) chk.checked = true;
         }
@@ -1313,11 +1508,11 @@ function gerarTextoOrcamento(fatores) {
 
       if (target.id === "btnLimparOrcamento") {
         orcamento = {};
-        // Limpa também as configurações de tecidos por partes
+        // Limpa também as configurações de tecidos e acabamentos
         try {
           localStorage.removeItem("starmobile_partes_tecidos");
         } catch (e) {
-          console.error("Erro ao limpar configuração de tecidos:", e);
+          console.error("Erro ao limpar configuração de tecidos/acabamentos:", e);
         }
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
