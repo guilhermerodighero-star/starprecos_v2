@@ -1257,7 +1257,7 @@ const campoBusca = document.getElementById("campoBusca");
               <select class="cor-madeira" data-codigo="${p.codigo}"
                       onchange="onCorMadeiraChange('${p.codigo}', this.value)"
                       ${naoAplicaMadeira ? "disabled" : ""}>
-                ${montarOpcoesGenericas(coresOpcoes, corMadeira.valor || "", "Selecione a cor...")}
+                ${montarOpcoesGenericas(coresmadeiraOpcoes, corMadeira.valor || "", "Selecione a cor...")}
               </select>
               <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
                 <input type="checkbox" class="chk-cor-madeira-nao-aplica" data-codigo="${p.codigo}"
