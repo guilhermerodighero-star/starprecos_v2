@@ -64,6 +64,48 @@
       "CADEIRA",
       "ATENA",
       "COM DEBRUM",
+      "FAIXA 5",
+      "FIXA",
+      "ST"
+    ],
+    "chaves": "CADEIRA | ATENA | COM DEBRUM | FAIXA 5 | FIXA | ST",
+    "preco_lista": 1444.8,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1467PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "COM DEBRUM",
+      "FAIXA 6",
+      "FIXA",
+      "CN"
+    ],
+    "chaves": "CADEIRA | ATENA | COM DEBRUM | FAIXA 6 | FIXA | CN",
+    "preco_lista": 2135.2,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1467PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "COM DEBRUM",
+      "FAIXA 7",
+      "FIXA",
+      "CN+"
+    ],
+    "chaves": "CADEIRA | ATENA | COM DEBRUM | FAIXA 7 | FIXA | CN+",
+    "preco_lista": 2386.4,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1467PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "COM DEBRUM",
       "FAIXA 1",
       "GIRATORIA",
       "SU",
@@ -114,6 +156,48 @@
       "VP"
     ],
     "chaves": "CADEIRA | ATENA | COM DEBRUM | FAIXA 4 | GIRATORIA | VP",
+    "preco_lista": 1571.0,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1467PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "COM DEBRUM",
+      "FAIXA 5",
+      "GIRATORIA",
+      "ST"
+    ],
+    "chaves": "CADEIRA | ATENA | COM DEBRUM | FAIXA 5 | GIRATORIA | ST",
+    "preco_lista": 1490.0,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1467PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "COM DEBRUM",
+      "FAIXA 6",
+      "GIRATORIA",
+      "CN"
+    ],
+    "chaves": "CADEIRA | ATENA | COM DEBRUM | FAIXA 6 | GIRATORIA | CN",
+    "preco_lista": 1505.0,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1467PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "COM DEBRUM",
+      "FAIXA 7",
+      "GIRATORIA",
+      "CN+"
+    ],
+    "chaves": "CADEIRA | ATENA | COM DEBRUM | FAIXA 7 | GIRATORIA | CN+",
     "preco_lista": 1571.0,
     "preco_promocional": null
   },
@@ -177,6 +261,20 @@
     "preco_promocional": null
   },
   {
+    "codigo": "1467PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "SEM DEBRUM",
+      "FAIXA 5",
+      "FIXA",
+      "ST"
+    ],
+    "chaves": "CADEIRA | ATENA | SEM DEBRUM | FAIXA 5 | FIXA | ST",
+    "preco_lista": 1490.0,
+    "preco_promocional": null
+  },
+  {
     "codigo": "1468PM",
     "campos": [
       "CADEIRA",
@@ -236,6 +334,20 @@
     "preco_promocional": null
   },
   {
+    "codigo": "1468PM",
+    "campos": [
+      "CADEIRA",
+      "ATENA",
+      "SEM DEBRUM",
+      "FAIXA 5",
+      "GIRATORIA",
+      "ST"
+    ],
+    "chaves": "CADEIRA | ATENA | SEM DEBRUM | FAIXA 5 | GIRATORIA | ST",
+    "preco_lista": 1580.25,
+    "preco_promocional": null
+  },
+  {
     "codigo": "1393PMT",
     "campos": [
       "POLTRONA",
@@ -243,11 +355,13 @@
       "FAIXA 1",
       "SU",
       "PU",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "SEM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 1 | SU | PU | ACO CARBONO | PINTURA AUTOMOTIVA | SEM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 1 | SU | PU | ACO | CARBONO | PINTURA | AUTOMOTIVA | SEM TELA",
     "preco_lista": 2614.0,
     "preco_promocional": null
   },
@@ -259,11 +373,13 @@
       "FAIXA 2",
       "SE",
       "FA",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "SEM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 2 | SE | FA | ACO CARBONO | PINTURA AUTOMOTIVA | SEM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 2 | SE | FA | ACO | CARBONO | PINTURA | AUTOMOTIVA | SEM TELA",
     "preco_lista": 2742.0,
     "preco_promocional": null
   },
@@ -275,11 +391,13 @@
       "FAIXA 3",
       "LP",
       "VL",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "SEM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 3 | LP | VL | ACO CARBONO | PINTURA AUTOMOTIVA | SEM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 3 | LP | VL | ACO | CARBONO | PINTURA | AUTOMOTIVA | SEM TELA",
     "preco_lista": 2847.0,
     "preco_promocional": null
   },
@@ -290,12 +408,65 @@
       "ARI",
       "FAIXA 4",
       "VP",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "SEM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 4 | VP | ACO CARBONO | PINTURA AUTOMOTIVA | SEM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 4 | VP | ACO | CARBONO | PINTURA | AUTOMOTIVA | SEM TELA",
     "preco_lista": 2916.0,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMT",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 5",
+      "ST",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
+      "SEM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 5 | ST | ACO | CARBONO | PINTURA | AUTOMOTIVA | SEM TELA",
+    "preco_lista": 3061.8,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMT",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 6",
+      "CN",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
+      "SEM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 6 | CN | ACO | CARBONO | PINTURA | AUTOMOTIVA | SEM TELA",
+    "preco_lista": 4443.8,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMT",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 7",
+      "CN+",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
+      "SEM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 7 | CN+ | ACO | CARBONO | PINTURA | AUTOMOTIVA | SEM TELA",
+    "preco_lista": 4966.599999999999,
     "preco_promocional": null
   },
   {
@@ -362,6 +533,51 @@
     "preco_promocional": null
   },
   {
+    "codigo": "1393PMTIPP",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 5",
+      "ST",
+      "INOX",
+      "VERNIZ",
+      "SEM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 5 | ST | INOX | VERNIZ | SEM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMTIPP",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 6",
+      "CN",
+      "INOX",
+      "VERNIZ",
+      "SEM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 6 | CN | INOX | VERNIZ | SEM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMTIPP",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 7",
+      "CN+",
+      "INOX",
+      "VERNIZ",
+      "SEM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 7 | CN+ | INOX | VERNIZ | SEM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
     "codigo": "1393PMTTS",
     "campos": [
       "POLTRONA",
@@ -369,11 +585,13 @@
       "FAIXA 1",
       "SU",
       "PU",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "COM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 1 | SU | PU | ACO CARBONO | PINTURA AUTOMOTIVA | COM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 1 | SU | PU | ACO | CARBONO | PINTURA | AUTOMOTIVA | COM TELA",
     "preco_lista": 3372.0,
     "preco_promocional": null
   },
@@ -385,11 +603,13 @@
       "FAIXA 2",
       "SE",
       "FA",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "COM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 2 | SE | FA | ACO CARBONO | PINTURA AUTOMOTIVA | COM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 2 | SE | FA | ACO | CARBONO | PINTURA | AUTOMOTIVA | COM TELA",
     "preco_lista": 3536.0,
     "preco_promocional": null
   },
@@ -401,11 +621,13 @@
       "FAIXA 3",
       "LP",
       "VL",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "COM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 3 | LP | VL | ACO CARBONO | PINTURA AUTOMOTIVA | COM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 3 | LP | VL | ACO | CARBONO | PINTURA | AUTOMOTIVA | COM TELA",
     "preco_lista": 3672.0,
     "preco_promocional": null
   },
@@ -416,12 +638,65 @@
       "ARI",
       "FAIXA 4",
       "VP",
-      "ACO CARBONO",
-      "PINTURA AUTOMOTIVA",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
       "COM TELA"
     ],
-    "chaves": "POLTRONA | ARI | FAIXA 4 | VP | ACO CARBONO | PINTURA AUTOMOTIVA | COM TELA",
+    "chaves": "POLTRONA | ARI | FAIXA 4 | VP | ACO | CARBONO | PINTURA | AUTOMOTIVA | COM TELA",
     "preco_lista": 3761.0,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMTTS",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 5",
+      "ST",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
+      "COM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 5 | ST | ACO | CARBONO | PINTURA | AUTOMOTIVA | COM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMTTS",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 6",
+      "CN",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
+      "COM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 6 | CN | ACO | CARBONO | PINTURA | AUTOMOTIVA | COM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMTTS",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 7",
+      "CN+",
+      "ACO",
+      "CARBONO",
+      "PINTURA",
+      "AUTOMOTIVA",
+      "COM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 7 | CN+ | ACO | CARBONO | PINTURA | AUTOMOTIVA | COM TELA",
+    "preco_lista": null,
     "preco_promocional": null
   },
   {
@@ -488,19 +763,62 @@
     "preco_promocional": null
   },
   {
+    "codigo": "1393PMTTSIPP",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 5",
+      "ST",
+      "INOX",
+      "VERNIZ",
+      "COM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 5 | ST | INOX | VERNIZ | COM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMTTSIPP",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 6",
+      "CN",
+      "INOX",
+      "VERNIZ",
+      "COM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 6 | CN | INOX | VERNIZ | COM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
+    "codigo": "1393PMTTSIPP",
+    "campos": [
+      "POLTRONA",
+      "ARI",
+      "FAIXA 7",
+      "CN+",
+      "INOX",
+      "VERNIZ",
+      "COM TELA"
+    ],
+    "chaves": "POLTRONA | ARI | FAIXA 7 | CN+ | INOX | VERNIZ | COM TELA",
+    "preco_lista": null,
+    "preco_promocional": null
+  },
+  {
     "codigo": "MJZ201EV",
     "campos": [
       "MESA",
       "ZOE",
       "JANTAR",
-      "2",
-      "1.1",
       "COM",
       "VIDRO",
       "PINTADO",
       "BASE REVESTIDA EM COURÍSSIMO"
     ],
-    "chaves": "MESA | ZOE | JANTAR | 2 | 1.1 | COM | VIDRO | PINTADO | BASE REVESTIDA EM COURÍSSIMO",
+    "chaves": "MESA | ZOE | JANTAR | COM | VIDRO | PINTADO | BASE REVESTIDA EM COURÍSSIMO",
     "preco_lista": 3152.0,
     "preco_promocional": null
   },
@@ -510,14 +828,12 @@
       "MESA",
       "ZOE",
       "JANTAR",
-      "2.2",
-      "1.1",
       "COM",
       "VIDRO",
       "PINTADO",
       "BASE REVESTIDA EM COURÍSSIMO"
     ],
-    "chaves": "MESA | ZOE | JANTAR | 2.2 | 1.1 | COM | VIDRO | PINTADO | BASE REVESTIDA EM COURÍSSIMO",
+    "chaves": "MESA | ZOE | JANTAR | COM | VIDRO | PINTADO | BASE REVESTIDA EM COURÍSSIMO",
     "preco_lista": 3391.0,
     "preco_promocional": null
   },
@@ -527,14 +843,12 @@
       "MESA",
       "ZOE",
       "JANTAR",
-      "2.2",
-      "1.2",
       "COM",
       "VIDRO",
       "PINTADO",
       "BASE REVESTIDA EM COURÍSSIMO"
     ],
-    "chaves": "MESA | ZOE | JANTAR | 2.2 | 1.2 | COM | VIDRO | PINTADO | BASE REVESTIDA EM COURÍSSIMO",
+    "chaves": "MESA | ZOE | JANTAR | COM | VIDRO | PINTADO | BASE REVESTIDA EM COURÍSSIMO",
     "preco_lista": 3438.0,
     "preco_promocional": null
   },
@@ -544,14 +858,12 @@
       "MESA",
       "ZOE",
       "JANTAR",
-      "2",
-      "1.1",
       "COM",
       "LAMINA",
       "CINAMOMO",
       "BASE REVESTIDA EM COURÍSSIMO"
     ],
-    "chaves": "MESA | ZOE | JANTAR | 2 | 1.1 | COM | LAMINA | CINAMOMO | BASE REVESTIDA EM COURÍSSIMO",
+    "chaves": "MESA | ZOE | JANTAR | COM | LAMINA | CINAMOMO | BASE REVESTIDA EM COURÍSSIMO",
     "preco_lista": 3266.0,
     "preco_promocional": null
   },
@@ -561,14 +873,12 @@
       "MESA",
       "ZOE",
       "JANTAR",
-      "2.2",
-      "1.1",
       "COM",
       "LAMINA",
       "CINAMOMO",
       "BASE REVESTIDA EM COURÍSSIMO"
     ],
-    "chaves": "MESA | ZOE | JANTAR | 2.2 | 1.1 | COM | LAMINA | CINAMOMO | BASE REVESTIDA EM COURÍSSIMO",
+    "chaves": "MESA | ZOE | JANTAR | COM | LAMINA | CINAMOMO | BASE REVESTIDA EM COURÍSSIMO",
     "preco_lista": 3505.0,
     "preco_promocional": null
   },
@@ -578,14 +888,12 @@
       "MESA",
       "ZOE",
       "JANTAR",
-      "2.2",
-      "1.2",
       "COM",
       "LAMINA",
       "CINAMOMO",
       "BASE REVESTIDA EM COURÍSSIMO"
     ],
-    "chaves": "MESA | ZOE | JANTAR | 2.2 | 1.2 | COM | LAMINA | CINAMOMO | BASE REVESTIDA EM COURÍSSIMO",
+    "chaves": "MESA | ZOE | JANTAR | COM | LAMINA | CINAMOMO | BASE REVESTIDA EM COURÍSSIMO",
     "preco_lista": 3553.0,
     "preco_promocional": null
   },
